@@ -216,7 +216,7 @@
       class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4"
     >
       <a
-        href="https://github.com/danilofiumi/Hackaton_VetSentinel"
+        href="https://github.com/danilofiumi/VetSentinel-Hackaton-Nebius-Nvidia"
         target="_blank"
         rel="noopener noreferrer"
         class="group inline-flex items-center gap-3 px-5 py-3 rounded-2xl bg-base-100/90 hover:bg-base-100 border border-base-content/15 hover:border-primary/50 shadow-md hover:shadow-xl hover:shadow-primary/10 transition-all duration-300 ease-in-out hover:-translate-y-1 active:scale-95 text-base-content backdrop-blur-md select-none"
@@ -248,7 +248,7 @@
           <span
             class="text-base-content/60 font-medium group-hover:text-base-content/80 transition-colors"
           >
-            danilofiumi/Hackaton_VetSentinel
+            danilofiumi/VetSentinel-Hackaton-Nebius-Nvidia
           </span>
         </div>
 
