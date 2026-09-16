@@ -15,6 +15,7 @@ params:
   PRIORITY: "CRITICAL"
   SYMPTOMS: "Suspected toxic ingestion"
   CONVERSATION_HISTORY: "[]"
+  LANGUAGE: "en"
 
 env:
   - DAG_NAME: "vetsentinel-chat-flow"
@@ -46,6 +47,7 @@ steps:
         --priority "$PRIORITY" \
         --symptoms "$SYMPTOMS" \
         --history "$CONVERSATION_HISTORY" \
+        --language "$LANGUAGE" \
         --output-dir "${context.paths.artifacts_dir}"
       # Mirror output to central artifacts so UI and PocketBase can retrieve it immediately
       cp -f "${context.paths.artifacts_dir}"/04_chat_reply.* "$DAGU_HOME/data/artifacts/vetsentinel"/ 2>/dev/null || true

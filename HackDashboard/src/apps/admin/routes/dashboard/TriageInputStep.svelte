@@ -756,10 +756,19 @@
     }
   }
 
+  // Localized chip label / category title (falls back to the hardcoded English)
+  function chipLabel(chip) {
+    return t(`triage.chips.${chip.id}`) || chip.label;
+  }
+
+  function catTitle(cat) {
+    return t(`triage.chipCats.${cat.id}`) || cat.title;
+  }
+
   function isSymptomUsed(chip) {
     if (!patient.sintomi) return false;
     const text = patient.sintomi.toLowerCase();
-    if (text.includes(chip.label.toLowerCase())) return true;
+    if (text.includes(chipLabel(chip).toLowerCase())) return true;
     if (
       chip.keywords &&
       chip.keywords.some((kw) => text.includes(kw.toLowerCase()))
@@ -774,11 +783,11 @@
       activePresetTitle = null;
     }
     if (!patient.sintomi) {
-      patient.sintomi = `${patient.peso} kg ${patient.razza || patient.specie}, ${chip.label}`;
+      patient.sintomi = `${patient.peso} kg ${patient.razza || patient.specie}, ${chipLabel(chip)}`;
       return;
     }
     if (isSymptomUsed(chip)) {
-      const escaped = chip.label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const escaped = chipLabel(chip).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const pattern = new RegExp(`(,?\\s*${escaped}|${escaped}\\s*,?)`, "i");
       let updated = patient.sintomi.replace(pattern, "").trim();
 
@@ -799,8 +808,8 @@
       patient.sintomi = updated;
     } else {
       patient.sintomi = patient.sintomi.trim()
-        ? `${patient.sintomi.trim()}, ${chip.label}`
-        : `${patient.peso} kg ${patient.razza || patient.specie}, ${chip.label}`;
+        ? `${patient.sintomi.trim()}, ${chipLabel(chip)}`
+        : `${patient.peso} kg ${patient.razza || patient.specie}, ${chipLabel(chip)}`;
     }
   }
 
@@ -1318,7 +1327,7 @@
             class="transition-transform duration-300 ease-in-out group-hover:scale-110"
             >{chip.icon}</span
           >
-          <span>{chip.label}</span>
+          <span>{chipLabel(chip)}</span>
           {#if isUsed}
             <span
               class="flex items-center justify-center w-3.5 h-3.5 rounded-full bg-white/25 text-[10px] font-black leading-none"
@@ -1351,7 +1360,7 @@
               class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-base-content/50 font-label"
             >
               <span class="text-sm">{cat.icon}</span>
-              <span>{cat.title}</span>
+              <span>{catTitle(cat)}</span>
               <span class="flex-1 h-px bg-base-content/10"></span>
             </div>
 
@@ -1371,7 +1380,7 @@
                   class="text-[10px] font-semibold text-accent/80 flex items-center gap-1"
                 >
                   <span>{parent.icon}</span>
-                  <span>{t("triage.refineLabel", { parent: parent.label })}</span>
+                  <span>{t("triage.refineLabel", { parent: chipLabel(parent) })}</span>
                 </div>
                 <div class="flex flex-wrap gap-1.5">
                   {#each parent.related as sub (sub.id)}

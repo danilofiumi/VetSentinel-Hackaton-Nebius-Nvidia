@@ -65,6 +65,7 @@ steps:
         --weight "$WEIGHT" \
         --symptoms "$SYMPTOMS" \
         --priority "$PRIORITY" \
+        --language "$LANGUAGE" \
         --output-dir "${context.paths.artifacts_dir}"
       # Early mirror so the UI can show the gap analysis live as soon as Step 2 finishes,
       # without waiting for the full pipeline (export_summary) to complete.
@@ -88,6 +89,7 @@ steps:
     working_dir: "${DAGU_HOME}/../app/py"
     run: |
       poetry run python 03_clinical_synthesis_nebius.py \
+        --language "$LANGUAGE" \
         --output-dir "${context.paths.artifacts_dir}"
       # Early mirror so the UI can show the protocol & emergency sheet live the moment this step finishes.
       mkdir -p "$DAGU_HOME/data/artifacts/vetsentinel"

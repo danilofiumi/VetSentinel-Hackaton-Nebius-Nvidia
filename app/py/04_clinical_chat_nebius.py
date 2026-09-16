@@ -19,6 +19,7 @@ from utils import (
     get_parameter,
     get_prompt,
     render_prompt,
+    resolve_language_name,
     trace_call,
     log_exception,
     log_env_diagnostics,
@@ -40,6 +41,7 @@ def parse_args():
     parser.add_argument("--symptoms", default=get_parameter("SYMPTOMS", "Suspected toxic ingestion"))
     parser.add_argument("--output-dir", default=get_parameter("OUTPUT_DIR", None))
     parser.add_argument("--history", default=get_parameter("CONVERSATION_HISTORY", "[]"))
+    parser.add_argument("--language", default=get_parameter("LANGUAGE", "en"), help="ISO language code for the copilot reply (en/it/es/fr/tr)")
     return parser.parse_args()
 
 def load_case_artifacts(output_dir: Path | None = None) -> dict:
@@ -162,7 +164,7 @@ def build_clinical_context(species: str, breed: str, weight: float, priority: st
     return ctx
 
 @trace_call("generate_copilot_reply", log_args=True)
-def generate_copilot_reply(query: str, species: str, breed: str, weight: float, priority: str, symptoms: str, artifacts: dict, history: list) -> dict:
+def generate_copilot_reply(query: str, species: str, breed: str, weight: float, priority: str, symptoms: str, artifacts: dict, history: list, language: str = "en") -> dict:
     nebius_api_key = get_parameter("NEBIUS_API_KEY")
     chat_model = get_parameter("NEBIUS_CHAT_MODEL", "nvidia/Nemotron-3-Ultra-550b-a55b")
     if "3.1" in chat_model:
@@ -179,17 +181,27 @@ def generate_copilot_reply(query: str, species: str, breed: str, weight: float, 
 
     context_text = build_clinical_context(species, breed, weight, priority, symptoms, artifacts)
 
-    system_prompt = (
-        "You are VetSentinel Clinical Emergency AI Copilot, an elite veterinary emergency & toxicology consultant powered by Nebius Token Factory.\n"
-        "You have full real-time awareness of the active clinical emergency case.\n"
-        "Answer the veterinarian's inquiries with rigorous clinical precision, fast readability, and evidence-based guidance.\n\n"
-        f"{context_text}\n"
-        "CLINICAL GUIDELINES FOR YOUR RESPONSES:\n"
-        f"1. GROUNDING: Ground answers in the patient's specific species ({species}), weight ({weight} kg), and symptoms.\n"
-        f"2. DOSAGE CALCULATIONS: When dosages are asked, ALWAYS state both the standard mg/kg reference dose AND the exact calculated milligram dose for this {weight} kg patient.\n"
-        "3. SPEED & STRUCTURE: Use structured Markdown with bold titles, bullet points, and callout warnings (e.g. ⚠️ CONTRAINDICATION: ...).\n"
-        "4. EMERGENCY FOCUS: Emphasize vital stabilization, decontamination time-windows, fluid rates, and antidote availability.\n"
-        "5. TONE: Professional, decisive, empathetic to high-stress emergency clinical workflow."
+    language_name = resolve_language_name(language)
+    system_prompt = render_prompt(
+        "copilot",
+        "system_prompt",
+        fallback=(
+            "You are VetSentinel Clinical Emergency AI Copilot, an elite veterinary emergency & toxicology consultant powered by Nebius Token Factory.\n"
+            "You have full real-time awareness of the active clinical emergency case.\n"
+            "Answer the veterinarian's inquiries with rigorous clinical precision, fast readability, and evidence-based guidance.\n\n"
+            "{context}\n"
+            "CLINICAL GUIDELINES FOR YOUR RESPONSES:\n"
+            "1. GROUNDING: Ground answers in the patient's specific species ({species}), weight ({weight} kg), and symptoms.\n"
+            "2. DOSAGE CALCULATIONS: When dosages are asked, ALWAYS state both the standard mg/kg reference dose AND the exact calculated milligram dose for this {weight} kg patient.\n"
+            "3. SPEED & STRUCTURE: Use structured Markdown with bold titles, bullet points, and callout warnings.\n"
+            "4. EMERGENCY FOCUS: Emphasize vital stabilization, decontamination time-windows, fluid rates, and antidote availability.\n"
+            "5. TONE: Professional, decisive, empathetic to high-stress emergency clinical workflow.\n"
+            "6. LANGUAGE: Write your entire response in {language_name}, matching the veterinarian's language."
+        ),
+        context=context_text,
+        species=species,
+        weight=weight,
+        language_name=language_name,
     )
 
     messages_payload = [{"role": "system", "content": system_prompt}]
@@ -359,7 +371,8 @@ def main():
         priority=args.priority,
         symptoms=args.symptoms,
         artifacts=artifacts,
-        history=history
+        history=history,
+        language=args.language
     )
 
     console.print()

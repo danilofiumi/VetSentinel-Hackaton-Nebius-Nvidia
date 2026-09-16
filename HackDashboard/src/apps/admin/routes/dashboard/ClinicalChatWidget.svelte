@@ -8,7 +8,7 @@
     fetchChatDagRunStatus,
     fetchChatReplyArtifact,
   } from "./daguService.js";
-  import { t } from "$lib";
+  import { t, i18nState } from "$lib";
 
   let {
     patient = {},
@@ -311,6 +311,7 @@
         patient,
         query: text,
         history: historyPayload,
+        language: i18nState.locale,
       });
 
       // 3. Poll Dagu run status until completed

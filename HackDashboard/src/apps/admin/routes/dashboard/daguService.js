@@ -130,7 +130,7 @@ export async function stopDaguPipeline(dagRunId = null) {
   }
 }
 
-export function buildChatDaguParams({ patient, query, history }) {
+export function buildChatDaguParams({ patient, query, history, language = "en" }) {
   const species = sanitizeParam(patient?.specie || "Cat");
   const breed = sanitizeParam(patient?.razza || "European Shorthair");
   const weight = sanitizeParam(patient?.peso || "4.0");
@@ -138,6 +138,7 @@ export function buildChatDaguParams({ patient, query, history }) {
   const symptoms = sanitizeParam(
     (patient?.sintomi || "Suspected toxic ingestion").replace(/[\r\n]+/g, " ")
   );
+  const lang = sanitizeParam(language || "en");
   const cleanQuery = sanitizeParam((query || "").replace(/[\r\n]+/g, " "));
 
   const trimmedHistory = (history || []).slice(-6).map((m) => ({
@@ -149,11 +150,11 @@ export function buildChatDaguParams({ patient, query, history }) {
   }));
   const historyStr = sanitizeParam(JSON.stringify(trimmedHistory));
 
-  return `SPECIES="${species}" BREED="${breed}" WEIGHT="${weight}" PRIORITY="${priority}" SYMPTOMS="${symptoms}" QUERY="${cleanQuery}" CONVERSATION_HISTORY="${historyStr}"`;
+  return `SPECIES="${species}" BREED="${breed}" WEIGHT="${weight}" PRIORITY="${priority}" SYMPTOMS="${symptoms}" QUERY="${cleanQuery}" CONVERSATION_HISTORY="${historyStr}" LANGUAGE="${lang}"`;
 }
 
-export async function startChatDaguPipeline({ patient, query, history }) {
-  const paramsStr = buildChatDaguParams({ patient, query, history });
+export async function startChatDaguPipeline({ patient, query, history, language = "en" }) {
+  const paramsStr = buildChatDaguParams({ patient, query, history, language });
 
   const res = await fetch("/api/dagu/dags/vetsentinel-chat-flow/start", {
     method: "POST",

@@ -20,6 +20,7 @@ from utils import (
     get_parameter,
     get_prompt,
     render_prompt,
+    resolve_language_name,
     trace_call,
     log_exception,
     log_env_diagnostics,
@@ -220,6 +221,7 @@ def parse_args():
     parser.add_argument("--weight", type=float, default=float(get_parameter("WEIGHT", "4.0")))
     parser.add_argument("--symptoms", default=get_parameter("SYMPTOMS", "4.0 kg European Shorthair cat, ingested an unidentified cut flower (likely Lilium) 2h ago, vomiting and lethargy."))
     parser.add_argument("--priority", default=get_parameter("PRIORITY", "auto"), help="Optional priority hint; AI determines priority dynamically")
+    parser.add_argument("--language", default=get_parameter("LANGUAGE", "en"), help="ISO language code for human-readable output (en/it/es/fr/tr)")
     default_model = get_parameter("NEBIUS_ORCHESTRATOR_MODEL", get_parameter("NEBIUS_MODEL", "zai-org/GLM-5.3"))
     if "3.1" in default_model or "qwen" in default_model.lower():
         default_model = "zai-org/GLM-5.3"
@@ -228,7 +230,7 @@ def parse_args():
     return parser.parse_args()
 
 @trace_call("analyze_clinical_case", log_args=True)
-def analyze_clinical_case(species: str, breed: str, weight: float, symptoms: str, priority_hint: str, model_name: str):
+def analyze_clinical_case(species: str, breed: str, weight: float, symptoms: str, priority_hint: str, model_name: str, language: str = "en"):
     nebius_api_key = get_parameter("NEBIUS_API_KEY")
     start_time = time.time()
 
@@ -237,10 +239,12 @@ def analyze_clinical_case(species: str, breed: str, weight: float, symptoms: str
     if "3.1" in effective_model or "qwen" in effective_model.lower():
         effective_model = "zai-org/GLM-5.3"
 
-    system_prompt = get_prompt(
+    language_name = resolve_language_name(language)
+    system_prompt = render_prompt(
         "orchestrator",
         "system_prompt",
-        default="You are a clinical orchestrator for veterinary emergencies. Respond exclusively with a valid JSON object, written in English."
+        fallback="You are a clinical orchestrator for veterinary emergencies. Respond exclusively with a valid JSON object. Write every human-readable string value in {language_name}.",
+        language_name=language_name,
     )
     prompt = render_prompt(
         "orchestrator",
@@ -249,7 +253,8 @@ def analyze_clinical_case(species: str, breed: str, weight: float, symptoms: str
         breed=breed,
         weight=weight,
         symptoms=symptoms,
-        effective_model=effective_model
+        effective_model=effective_model,
+        language_name=language_name,
     )
 
     result_data = None
@@ -490,7 +495,8 @@ def main():
         weight=args.weight,
         symptoms=args.symptoms,
         priority_hint=args.priority,
-        model_name=args.model
+        model_name=args.model,
+        language=args.language
     )
 
     if not isinstance(result, dict):

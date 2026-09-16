@@ -112,6 +112,22 @@ def render_prompt(section: str, key: str = "user_prompt", fallback: str = "", **
         rendered = rendered.replace(f"{{{k}}}", str(v))
     return rendered
 
+# Human-readable language names for prompt localization (keyed by ISO 639-1 code)
+LANGUAGE_NAMES = {
+    "en": "English",
+    "it": "Italian",
+    "es": "Spanish",
+    "fr": "French",
+    "tr": "Turkish",
+}
+
+def resolve_language_name(code: str) -> str:
+    """Map an ISO language code (en/it/es/fr/tr) to its English language name for prompt instructions."""
+    if not code:
+        return LANGUAGE_NAMES["en"]
+    key = str(code).strip().lower()[:2]
+    return LANGUAGE_NAMES.get(key, LANGUAGE_NAMES["en"])
+
 # Load environment variables from workspace root or current dir (secrets override static defaults)
 root_env = Path(__file__).resolve().parent.parent.parent / ".env"
 local_env = Path(__file__).resolve().parent / ".env"

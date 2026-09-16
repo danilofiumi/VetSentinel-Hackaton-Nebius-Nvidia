@@ -22,6 +22,7 @@ from utils import (
     get_parameter,
     get_prompt,
     render_prompt,
+    resolve_language_name,
     trace_call,
     log_exception,
     log_http_request,
@@ -39,6 +40,7 @@ FALLBACK_NOTICE = (
 def parse_args():
     parser = argparse.ArgumentParser(description="Step 3: Nebius Clinical Synthesis & Dosage Calculation")
     parser.add_argument("--output-dir", default=get_parameter("OUTPUT_DIR", None))
+    parser.add_argument("--language", default=get_parameter("LANGUAGE", "en"), help="ISO language code for human-readable output (en/it/es/fr/tr)")
     return parser.parse_args()
 
 @trace_call("classify_case", log_args=True, log_result=True)
@@ -289,7 +291,7 @@ def _valid_synthesis(data):
     return True
 
 @trace_call("synthesize_with_llm", log_args=True)
-def synthesize_with_llm(patient, documents, model_name):
+def synthesize_with_llm(patient, documents, model_name, language: str = "en"):
     """Evidence-grounded synthesis: feeds the retrieved documents back into the
     Nebius LLM to produce the protocol. Returns None if unavailable/invalid so
     the caller can fall back to the deterministic clinical rules."""
@@ -309,10 +311,12 @@ def synthesize_with_llm(patient, documents, model_name):
         for i, d in enumerate(documents[:6])
     )
 
-    system_prompt = get_prompt(
+    language_name = resolve_language_name(language)
+    system_prompt = render_prompt(
         "clinical_synthesis",
         "system_prompt",
-        default="You are a veterinary clinical synthesis engine. Respond only with a valid JSON object, in English, grounded in the provided evidence."
+        fallback="You are a veterinary clinical synthesis engine. Respond only with a valid JSON object, grounded in the provided evidence. Write every human-readable prose value in {language_name}.",
+        language_name=language_name,
     )
     prompt = render_prompt(
         "clinical_synthesis",
@@ -322,7 +326,8 @@ def synthesize_with_llm(patient, documents, model_name):
         weight=weight,
         priority=patient.get("priority"),
         symptoms=patient.get("symptoms"),
-        evidence=evidence
+        evidence=evidence,
+        language_name=language_name,
     )
 
     synthesis_model = get_parameter("NEBIUS_SYNTHESIS_MODEL", get_parameter("NEBIUS_MODEL", "zai-org/GLM-5.3"))
@@ -457,7 +462,7 @@ def main():
         log_info(f"Search documents loaded from Step 2 ({len(documents)} references)")
 
     # Prefer evidence-grounded LLM synthesis; fall back to deterministic rules.
-    synthesis = synthesize_with_llm(patient, documents, model_used)
+    synthesis = synthesize_with_llm(patient, documents, model_used, language=args.language)
     if synthesis:
         synthesis.setdefault("timestamp", time.strftime('%Y-%m-%d %H:%M:%S'))
         synthesis["patient"] = patient
