@@ -1,0 +1,17 @@
+.git
+.venv
+**/__pycache__
+**/*.pyc
+node_modules
+.env
+.env.*
+!.env.example
+*.db
+*.db-*
+.dagu/data
+.dagu/logs
+.dagu/suspend
+.dagu/dags/.dag.index
+app/pb/pb_data
+HackDashboard/.svelte-kit*
+HackDashboard/node_modules

@@ -1,0 +1,9 @@
+# VetSentinel Veterinary Emergency & Toxicology Triage System
+# Robots.txt configuration
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /app-content/
+
+# Sitemaps
+Sitemap: https://vetsentinel.app/sitemap.xml

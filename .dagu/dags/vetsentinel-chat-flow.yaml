@@ -1,0 +1,51 @@
+# VetSentinel Clinical AI Copilot Interactive Reasoning Flow
+# Dedicated Dagu execution graph for clinical chat inquiries with full telemetry
+
+description: "VetSentinel - Clinical AI Copilot Interactive Reasoning Flow"
+type: graph
+
+artifacts:
+  enabled: true
+
+params:
+  QUERY: "What is the emergency protocol for this patient?"
+  SPECIES: "Cat"
+  BREED: "European Shorthair"
+  WEIGHT: "4.0"
+  PRIORITY: "CRITICAL"
+  SYMPTOMS: "Suspected toxic ingestion"
+  CONVERSATION_HISTORY: "[]"
+
+env:
+  - DAG_NAME: "vetsentinel-chat-flow"
+  - RUN_ARTIFACTS_DIR: "${context.paths.artifacts_dir}"
+  - CENTRAL_ARTIFACTS_DIR: "$DAGU_HOME/data/artifacts/vetsentinel"
+  - TAVILY_API_KEY: "${TAVILY_API_KEY}"
+  - NEBIUS_API_KEY: "${NEBIUS_API_KEY}"
+  - NEBIUS_API_URL: "${NEBIUS_API_URL}"
+  - NEBIUS_CHAT_MODEL: "nvidia/Nemotron-3-Ultra-550b-a55b"
+  - NEBIUS_FALLBACK_MODEL: "zai-org/GLM-5.3-Flash"
+  - NEBIUS_CHAT_TEMPERATURE: "${NEBIUS_CHAT_TEMPERATURE:-0.2}"
+  - NEBIUS_CHAT_MAX_TOKENS: "${NEBIUS_CHAT_MAX_TOKENS:-6000}"
+  - NEBIUS_CHAT_TIMEOUT: "${NEBIUS_CHAT_TIMEOUT:-35}"
+  - NEBIUS_TIMEOUT: "${NEBIUS_TIMEOUT}"
+  - POCKETBASE_URL: "${POCKETBASE_URL}"
+
+steps:
+  - name: copilot_chat_reasoning
+    description: "Nebius Clinical AI Copilot Interactive Reasoning"
+    working_dir: "${DAGU_HOME}/../app/py"
+    run: |
+      mkdir -p "${context.paths.artifacts_dir}"
+      mkdir -p "$DAGU_HOME/data/artifacts/vetsentinel"
+      poetry run python 04_clinical_chat_nebius.py \
+        --query "$QUERY" \
+        --species "$SPECIES" \
+        --breed "$BREED" \
+        --weight "$WEIGHT" \
+        --priority "$PRIORITY" \
+        --symptoms "$SYMPTOMS" \
+        --history "$CONVERSATION_HISTORY" \
+        --output-dir "${context.paths.artifacts_dir}"
+      # Mirror output to central artifacts so UI and PocketBase can retrieve it immediately
+      cp -f "${context.paths.artifacts_dir}"/04_chat_reply.* "$DAGU_HOME/data/artifacts/vetsentinel"/ 2>/dev/null || true

@@ -1,0 +1,7 @@
+FROM ghcr.io/muchobien/pocketbase:latest
+
+# Copy migrations, JS hooks, static public assets, and static parameters into the container image
+COPY ./app/pb/pb_migrations /pb_migrations
+COPY ./app/pb/pb_hooks /pb_hooks
+COPY ./app/pb/pb_public /pb_public
+COPY ./static /static

@@ -1,0 +1,30 @@
+{
+  "NEBIUS_API_URL": "https://api.studio.nebius.ai/v1/chat/completions",
+  "NEBIUS_TIMEOUT": 18000,
+
+  "NEBIUS_MODEL": "zai-org/GLM-5.3",
+  "NEBIUS_FALLBACK_MODEL": "zai-org/GLM-5.3-Flash",
+  "NEBIUS_ORCHESTRATOR_TEMPERATURE": 0.1,
+  "NEBIUS_ORCHESTRATOR_MAX_TOKENS": 12000,
+  "NEBIUS_ORCHESTRATOR_TIMEOUT": 18000,
+  "NEBIUS_ORCHESTRATOR_RESPONSE_FORMAT": "json_object",
+  
+  "NEBIUS_SYNTHESIS_MODEL": "zai-org/GLM-5.3",
+  "NEBIUS_SYNTHESIS_TEMPERATURE": 0.1,
+  "NEBIUS_SYNTHESIS_MAX_TOKENS": 80000,
+  "NEBIUS_SYNTHESIS_TIMEOUT": 18000,
+  "NEBIUS_SYNTHESIS_RESPONSE_FORMAT": "json_object",
+  
+  "NEBIUS_CHAT_MODEL": "nvidia/Nemotron-3-Ultra-550b-a55b",
+  "NEBIUS_CHAT_TEMPERATURE": 0.2,
+  "NEBIUS_CHAT_MAX_TOKENS": 6000,
+  "NEBIUS_CHAT_TIMEOUT": 45,
+  "POCKETBASE_URL": "http://pocketbase:8090",
+  "DAGU_HOST": "0.0.0.0",
+  "DAGU_PORT": "8075",
+  "DAGU_USER": "admin",
+  "DAGU_PASSWORD": "vetsentinel-admin",
+  "DAGU_HOME": "/app/.dagu",
+  "ARTIFACTS_DIR": "/app/.dagu/data/artifacts/vetsentinel",
+  "DAGU_LOGS_DIR": "/app/.dagu/logs"
+}

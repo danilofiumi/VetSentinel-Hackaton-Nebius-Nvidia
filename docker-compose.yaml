@@ -1,0 +1,70 @@
+services:
+  
+  pocketbase:
+    build:
+      context: .
+      dockerfile: Dockerfile.pocketbase
+    container_name: vetsentinel-pocketbase
+    restart: unless-stopped
+    ports:
+      - "8090:8090"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - DAGU_HOST=${DAGU_HOST:-dagu}
+      - DAGU_PORT=${DAGU_PORT:-8075}
+      - DAGU_USER=${DAGU_USER:-admin}
+      - DAGU_PASSWORD=${DAGU_PASSWORD:-vetsentinel-admin}
+      - ARTIFACTS_DIR=${ARTIFACTS_DIR:-/app/.dagu/data/artifacts/vetsentinel}
+      - DAGU_LOGS_DIR=${DAGU_LOGS_DIR:-/app/.dagu/logs}
+      - PUBLIC_DIR=${PUBLIC_DIR:-}
+    volumes:
+      - pocketbase_data:/pb_data
+      - dagu_data:/app/.dagu/data:ro
+      - dagu_logs:/app/.dagu/logs:ro
+
+  dagu:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vetsentinel-dagu
+    restart: unless-stopped
+    command: dagu start-all
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - TAVILY_API_KEY=${TAVILY_API_KEY:-}
+      - NEBIUS_API_KEY=${NEBIUS_API_KEY:-}
+      - NEBIUS_API_URL=${NEBIUS_API_URL:-}
+      - NEBIUS_MODEL=${NEBIUS_MODEL:-}
+      - NEBIUS_FALLBACK_MODEL=${NEBIUS_FALLBACK_MODEL:-}
+      - NEBIUS_ORCHESTRATOR_TEMPERATURE=${NEBIUS_ORCHESTRATOR_TEMPERATURE:-}
+      - NEBIUS_ORCHESTRATOR_MAX_TOKENS=${NEBIUS_ORCHESTRATOR_MAX_TOKENS:-}
+      - NEBIUS_ORCHESTRATOR_TIMEOUT=${NEBIUS_ORCHESTRATOR_TIMEOUT:-}
+      - NEBIUS_SYNTHESIS_MODEL=${NEBIUS_SYNTHESIS_MODEL:-}
+      - NEBIUS_SYNTHESIS_TEMPERATURE=${NEBIUS_SYNTHESIS_TEMPERATURE:-}
+      - NEBIUS_SYNTHESIS_MAX_TOKENS=${NEBIUS_SYNTHESIS_MAX_TOKENS:-}
+      - NEBIUS_SYNTHESIS_TIMEOUT=${NEBIUS_SYNTHESIS_TIMEOUT:-}
+      - NEBIUS_CHAT_MODEL=${NEBIUS_CHAT_MODEL:-}
+      - NEBIUS_CHAT_TEMPERATURE=${NEBIUS_CHAT_TEMPERATURE:-}
+      - NEBIUS_CHAT_MAX_TOKENS=${NEBIUS_CHAT_MAX_TOKENS:-}
+      - NEBIUS_CHAT_TIMEOUT=${NEBIUS_CHAT_TIMEOUT:-}
+      - NEBIUS_TIMEOUT=${NEBIUS_TIMEOUT:-1800}
+      - POCKETBASE_URL=${POCKETBASE_URL:-http://pocketbase:8090}
+      - DAGU_HOST=${DAGU_HOST:-0.0.0.0}
+      - DAGU_PORT=${DAGU_PORT:-8075}
+      - DAGU_USER=${DAGU_USER:-admin}
+      - DAGU_PASSWORD=${DAGU_PASSWORD:-vetsentinel-admin}
+      - DAGU_HOME=${DAGU_HOME:-/app/.dagu}
+    volumes:
+      - dagu_data:/app/.dagu/data
+      - dagu_logs:/app/.dagu/logs
+    depends_on:
+      - pocketbase
+
+volumes:
+  pocketbase_data:
+  dagu_data:
+  dagu_logs:

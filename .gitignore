@@ -1,0 +1,100 @@
+# Environment Secrets
+.env
+.env.*
+!.env.example
+
+# Dagu sandbox runtime state
+.dagu/logs/
+.dagu/data/
+.dagu/artifacts/
+.dagu/suspend/
+.dagu/.base-config-created
+.dagu/base.yaml
+.dagu/.DS_Store
+.dagu/dags/.dag.index
+.dagu/dags/.DS_Store
+
+# OS-specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDEs & Editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*~
+
+# Frontend & SvelteKit
+node_modules/
+*/node_modules/
+.svelte-kit/
+*/.svelte-kit*/
+
+# Ensure SvelteKit src/lib is tracked
+!**/src/lib/**
+
+# Python-specific
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+/lib/
+/lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+ipython_config.py
+
+# Testing & Coverage
+htmlcov/
+.tox/
+.nosexy
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+
+# Logs & DBs
+*.log
+sqlite.db
+runs/
+
+# PocketBase local database and storage
+**/pb_data/

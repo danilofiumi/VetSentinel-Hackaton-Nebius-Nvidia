@@ -1,0 +1,61 @@
+# Dagu Sandboxed Configuration
+# This file configures the Dagu server's behavior for VetSentinel.
+# Supports environment variable expansion (e.g. ${DAGU_HOME}).
+
+host: "${DAGU_HOST:-0.0.0.0}"
+port: 8075
+debug: false
+default_execution_mode: "local"
+
+# Sandboxed paths within the workspace
+dags_dir: "${DAGU_HOME}/dags"
+log_dir: "${DAGU_HOME}/logs"
+data_dir: "${DAGU_HOME}/data"
+artifact_dir: "${DAGU_HOME}/data/artifacts"
+
+# Enable and configure artifact storage
+artifacts:
+  enabled: true
+  dir: "${DAGU_HOME}/data/artifacts"
+
+# UI Configuration
+ui:
+  navbar_title: "VetSentinel Workflow Engine"
+  navbar_color: "red"
+
+# Authentication settings: basic auth with configurable credentials
+auth:
+  mode: "none"
+  
+
+# Forward workspace environment variables to step executions
+env_passthrough:
+  - PATH
+  - PYTHONPATH
+  - TAVILY_API_KEY
+  - NEBIUS_API_KEY
+  - NEBIUS_API_URL
+  - NEBIUS_MODEL
+  - NEBIUS_FALLBACK_MODEL
+  - NEBIUS_ORCHESTRATOR_TEMPERATURE
+  - NEBIUS_ORCHESTRATOR_MAX_TOKENS
+  - NEBIUS_ORCHESTRATOR_TIMEOUT
+  - NEBIUS_SYNTHESIS_MODEL
+  - NEBIUS_SYNTHESIS_TEMPERATURE
+  - NEBIUS_SYNTHESIS_MAX_TOKENS
+  - NEBIUS_SYNTHESIS_TIMEOUT
+  - NEBIUS_CHAT_MODEL
+  - NEBIUS_CHAT_TEMPERATURE
+  - NEBIUS_CHAT_MAX_TOKENS
+  - NEBIUS_CHAT_TIMEOUT
+  - NEBIUS_TIMEOUT
+  - POCKETBASE_URL
+  - DAGU_HOME
+  - DAGU_HOST
+  - DAGU_PORT
+  - DAGU_USER
+  - DAGU_PASSWORD
+  - ARTIFACTS_DIR
+  - DAGU_LOGS_DIR
+  - DAG_RUN_ARTIFACTS_DIR
+  - OUTPUT_DIR

@@ -1,0 +1,275 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 768" width="100%" height="100%">
+  <defs>
+    <!-- Gradients -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a121e"/>
+      <stop offset="50%" stop-color="#0f1f2e"/>
+      <stop offset="100%" stop-color="#07131d"/>
+    </linearGradient>
+
+    <radialGradient id="emeraldAura" cx="45%" cy="50%" r="55%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.22"/>
+      <stop offset="60%" stop-color="#064e3b" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#0a121e" stop-opacity="0"/>
+    </radialGradient>
+
+    <radialGradient id="monitorGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#34d399" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+    </radialGradient>
+
+    <linearGradient id="screenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0d2427"/>
+      <stop offset="100%" stop-color="#061619"/>
+    </linearGradient>
+
+    <linearGradient id="dogFurGrad" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="45%" stop-color="#f59e0b"/>
+      <stop offset="85%" stop-color="#d97706"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+
+    <linearGradient id="dogBellyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef3c7"/>
+      <stop offset="100%" stop-color="#fde68a"/>
+    </linearGradient>
+
+    <linearGradient id="bedGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e3a45"/>
+      <stop offset="100%" stop-color="#0f232b"/>
+    </linearGradient>
+
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <!-- Background Canvas -->
+  <rect width="1024" height="768" fill="url(#bgGrad)"/>
+  <rect width="1024" height="768" fill="url(#emeraldAura)"/>
+
+  <!-- Hospital Tech Grid Subtle Overlay -->
+  <g opacity="0.08" stroke="#34d399" stroke-width="1">
+    <line x1="0" y1="96" x2="1024" y2="96"/>
+    <line x1="0" y1="192" x2="1024" y2="192"/>
+    <line x1="0" y1="288" x2="1024" y2="288"/>
+    <line x1="0" y1="384" x2="1024" y2="384"/>
+    <line x1="0" y1="480" x2="1024" y2="480"/>
+    <line x1="0" y1="576" x2="1024" y2="576"/>
+    <line x1="0" y1="672" x2="1024" y2="672"/>
+    <line x1="128" y1="0" x2="128" y2="768"/>
+    <line x1="256" y1="0" x2="256" y2="768"/>
+    <line x1="384" y1="0" x2="384" y2="768"/>
+    <line x1="512" y1="0" x2="512" y2="768"/>
+    <line x1="640" y1="0" x2="640" y2="768"/>
+    <line x1="768" y1="0" x2="768" y2="768"/>
+    <line x1="896" y1="0" x2="896" y2="768"/>
+  </g>
+
+  <!-- Recovery Ward Architecture Elements -->
+  <!-- Clinic Window / Wall Divider -->
+  <rect x="60" y="60" width="400" height="280" rx="16" fill="#0f2631" opacity="0.4" stroke="#1b414f" stroke-width="2"/>
+  <line x1="260" y1="60" x2="260" y2="340" stroke="#1b414f" stroke-width="2" opacity="0.5"/>
+  <line x1="60" y1="200" x2="460" y2="200" stroke="#1b414f" stroke-width="2" opacity="0.5"/>
+
+  <!-- Telemetry Header Status on Wall -->
+  <g transform="translate(70, 80)">
+    <rect width="180" height="26" rx="6" fill="#064e3b" opacity="0.85"/>
+    <circle cx="14" cy="13" r="5" fill="#34d399" filter="url(#glow)"/>
+    <text x="28" y="17" fill="#6ee7b7" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700">ICU RECOVERY WARD</text>
+  </g>
+
+  <!-- Modern Telemetry Display Unit (Right Side) -->
+  <g transform="translate(560, 90)" filter="url(#softShadow)">
+    <!-- Monitor Stand -->
+    <rect x="180" y="320" width="24" height="110" rx="4" fill="#1e293b"/>
+    <rect x="130" y="420" width="124" height="16" rx="6" fill="#0f172a" stroke="#334155" stroke-width="1.5"/>
+
+    <!-- Screen Chassis -->
+    <rect x="0" y="0" width="384" height="324" rx="20" fill="#0f172a" stroke="#1e293b" stroke-width="4"/>
+    <rect x="8" y="8" width="368" height="308" rx="14" fill="url(#screenGrad)"/>
+
+    <!-- Screen Status Top Bar -->
+    <rect x="18" y="18" width="348" height="32" rx="8" fill="#0a1b20"/>
+    <circle cx="34" cy="34" r="5" fill="#10b981" filter="url(#glow)"/>
+    <text x="48" y="38" fill="#34d399" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700">PATIENT: BARNABY (CANINE 28kg)</text>
+    <rect x="274" y="24" width="82" height="20" rx="4" fill="#059669"/>
+    <text x="282" y="38" fill="#ffffff" font-family="'JetBrains Mono', monospace" font-size="9" font-weight="800">STABILIZED</text>
+
+    <!-- ECG Waveform Grid -->
+    <g opacity="0.15" stroke="#10b981" stroke-width="0.8">
+      <line x1="20" y1="90" x2="364" y2="90"/>
+      <line x1="20" y1="130" x2="364" y2="130"/>
+      <line x1="20" y1="170" x2="364" y2="170"/>
+      <line x1="20" y1="210" x2="364" y2="210"/>
+    </g>
+
+    <!-- Normal Sinus Rhythm ECG Curve -->
+    <path d="M 22 130 L 70 130 L 80 130 L 88 124 L 96 130 L 110 130 L 116 135 L 122 84 L 130 152 L 136 130 L 150 130 L 164 120 L 180 130 L 220 130 L 228 124 L 236 130 L 246 130 L 252 135 L 258 84 L 266 152 L 272 130 L 284 130 L 298 120 L 314 130 L 360 130"
+          fill="none" stroke="#34d399" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+
+    <!-- Telemetry Vitals Readout Cards -->
+    <!-- Heart Rate -->
+    <rect x="20" y="230" width="102" height="66" rx="10" fill="#081d22" stroke="#10b981" stroke-width="1"/>
+    <text x="28" y="248" fill="#6ee7b7" font-family="'JetBrains Mono', monospace" font-size="9" font-weight="600">HEART RATE</text>
+    <text x="28" y="278" fill="#ffffff" font-family="'Space Grotesk', sans-serif" font-size="24" font-weight="800">74</text>
+    <text x="62" y="278" fill="#34d399" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="600">BPM</text>
+    <text x="28" y="291" fill="#10b981" font-family="'JetBrains Mono', monospace" font-size="8">NORMAL RHYTHM</text>
+
+    <!-- SpO2 -->
+    <rect x="132" y="230" width="102" height="66" rx="10" fill="#081d22" stroke="#06b6d4" stroke-width="1"/>
+    <text x="140" y="248" fill="#67e8f9" font-family="'JetBrains Mono', monospace" font-size="9" font-weight="600">SpO2</text>
+    <text x="140" y="278" fill="#ffffff" font-family="'Space Grotesk', sans-serif" font-size="24" font-weight="800">99</text>
+    <text x="174" y="278" fill="#06b6d4" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="600">%</text>
+    <text x="140" y="291" fill="#06b6d4" font-family="'JetBrains Mono', monospace" font-size="8">OPTIMAL</text>
+
+    <!-- MAP Pressure -->
+    <rect x="244" y="230" width="118" height="66" rx="10" fill="#081d22" stroke="#38bdf8" stroke-width="1"/>
+    <text x="252" y="248" fill="#7dd3fc" font-family="'JetBrains Mono', monospace" font-size="9" font-weight="600">PERFUSION MAP</text>
+    <text x="252" y="278" fill="#ffffff" font-family="'Space Grotesk', sans-serif" font-size="22" font-weight="800">92</text>
+    <text x="284" y="278" fill="#38bdf8" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="600">mmHg</text>
+    <text x="252" y="291" fill="#38bdf8" font-family="'JetBrains Mono', monospace" font-size="8">TARGET MET</text>
+  </g>
+
+  <!-- IV Infusion Stand (Tapered Off / Disconnected Line with Cap) -->
+  <g transform="translate(480, 160)">
+    <line x1="0" y1="0" x2="0" y2="400" stroke="#334155" stroke-width="4"/>
+    <path d="M -30 -10 Q 0 -25 0 0" fill="none" stroke="#475569" stroke-width="3"/>
+    <path d="M 30 -10 Q 0 -25 0 0" fill="none" stroke="#475569" stroke-width="3"/>
+    <!-- IV Bag (Saline Flushed) -->
+    <rect x="-22" y="5" width="44" height="74" rx="8" fill="#1e293b" opacity="0.6" stroke="#475569" stroke-width="1.5"/>
+    <path d="M -16 35 L 16 35" stroke="#34d399" stroke-width="1" opacity="0.6"/>
+    <text x="-16" y="50" fill="#94a3b8" font-family="'JetBrains Mono', monospace" font-size="7">0.9% NaCl</text>
+    <!-- Infusion line looped and clamped safely -->
+    <path d="M 0 85 C 10 130, -20 180, 0 240" fill="none" stroke="#6ee7b7" stroke-width="2" opacity="0.7"/>
+    <rect x="-6" y="235" width="12" height="12" rx="3" fill="#10b981"/>
+  </g>
+
+  <!-- Clinical Bed / Platform -->
+  <g transform="translate(60, 480)" filter="url(#softShadow)">
+    <!-- Bed Base Frame -->
+    <rect x="0" y="130" width="580" height="40" rx="10" fill="#0f172a" stroke="#1e293b" stroke-width="2"/>
+    <!-- Bed Support Legs with Medical Casters -->
+    <rect x="50" y="170" width="20" height="46" rx="4" fill="#1e293b"/>
+    <circle cx="60" cy="222" r="10" fill="#334155"/>
+    <circle cx="60" cy="222" r="4" fill="#64748b"/>
+
+    <rect x="510" y="170" width="20" height="46" rx="4" fill="#1e293b"/>
+    <circle cx="520" cy="222" r="10" fill="#334155"/>
+    <circle cx="520" cy="222" r="4" fill="#64748b"/>
+
+    <!-- High-Comfort Clinical Orthopedic Cushion / Mattress -->
+    <rect x="10" y="60" width="560" height="76" rx="20" fill="url(#bedGrad)" stroke="#164e63" stroke-width="2"/>
+    <path d="M 20 72 L 560 72" stroke="#22d3ee" stroke-width="1.5" opacity="0.3"/>
+
+    <!-- Hospital Recovery Blanket (Folded Comfortably, Emerald/Cyan Toned) -->
+    <path d="M 280 80 Q 420 70 550 90 L 550 134 L 270 134 Z" fill="#064e3b" opacity="0.8"/>
+    <path d="M 270 80 Q 300 75 320 85" stroke="#34d399" stroke-width="2" fill="none"/>
+  </g>
+
+  <!-- Recovered Patient: Barnaby (Stylized 2D Vector Golden Retriever) -->
+  <g transform="translate(100, 240)">
+    <!-- Shadow beneath dog -->
+    <ellipse cx="230" cy="310" rx="190" ry="24" fill="#05121a" opacity="0.6"/>
+
+    <!-- Dog Body Group -->
+    <g filter="url(#softShadow)">
+      <!-- Wagging Tail -->
+      <path d="M 70 240 Q 20 200 10 150 Q 25 140 45 170 Q 75 210 95 230 Z"
+            fill="url(#dogFurGrad)"/>
+      <path d="M 12 152 Q 22 180 40 200" stroke="#fef3c7" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.7"/>
+
+      <!-- Hind Leg Resting -->
+      <path d="M 100 240 C 90 270 110 305 170 305 C 190 305 210 295 210 270 C 210 245 170 230 140 230 Z"
+            fill="#b45309"/>
+      <ellipse cx="175" cy="298" rx="35" ry="12" fill="#d97706"/>
+
+      <!-- Main Torso / Back -->
+      <path d="M 100 240 C 110 180 160 160 260 170 C 330 178 350 210 360 270 C 330 300 250 305 150 295 C 110 290 95 260 100 240 Z"
+            fill="url(#dogFurGrad)"/>
+
+      <!-- Soft Cream Chest Fur -->
+      <path d="M 280 200 C 330 215 350 250 345 285 C 320 295 270 280 260 250 Z"
+            fill="url(#dogBellyGrad)"/>
+
+      <!-- Front Paws (Resting Calmly, One Layered) -->
+      <path d="M 290 230 L 320 302 L 360 302 C 370 302 375 292 368 285 L 335 230 Z" fill="#b45309"/>
+      <path d="M 325 220 L 350 305 L 400 305 C 412 305 418 295 410 285 L 375 220 Z" fill="url(#dogFurGrad)"/>
+      <circle cx="395" cy="300" r="4" fill="#fde68a"/>
+      <circle cx="385" cy="300" r="4" fill="#fde68a"/>
+      <circle cx="375" cy="300" r="4" fill="#fde68a"/>
+
+      <!-- Dog Neck & Stately Head Raised Proudly -->
+      <path d="M 260 170 C 290 120 340 100 390 105 C 415 107 435 125 435 155 C 435 180 405 210 350 220 Z"
+            fill="url(#dogFurGrad)"/>
+
+      <!-- Golden Fluffy Ear (Alert & Content) -->
+      <path d="M 330 115 C 310 140 300 200 325 220 C 335 225 345 215 345 195 C 345 160 355 125 330 115 Z"
+            fill="#92400e"/>
+      <path d="M 326 140 C 318 170 322 195 332 205" stroke="#f59e0b" stroke-width="2" fill="none"/>
+
+      <!-- Dog Snout & Happy Jowl -->
+      <path d="M 390 108 C 425 110 465 125 465 145 C 465 162 435 178 395 178 C 375 178 365 170 365 155 Z"
+            fill="url(#dogFurGrad)"/>
+      <path d="M 405 135 C 435 142 455 152 450 165 C 435 172 400 170 390 162 Z"
+            fill="url(#dogBellyGrad)"/>
+
+      <!-- Nose (Healthy & Moist) -->
+      <path d="M 455 135 C 468 135 470 145 462 150 C 455 154 448 145 455 135 Z" fill="#1e1b18"/>
+      <ellipse cx="459" cy="139" rx="3" ry="1.5" fill="#64748b" opacity="0.6"/>
+
+      <!-- Happy Eye -->
+      <ellipse cx="385" cy="128" rx="8" ry="9" fill="#1e1b18"/>
+      <circle cx="388" cy="126" r="3" fill="#ffffff"/>
+      <circle cx="383" cy="131" r="1.5" fill="#ffffff" opacity="0.8"/>
+      <path d="M 374 118 Q 388 114 398 120" stroke="#78350f" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+
+      <!-- Gentle Smile Line & Tongue Tip -->
+      <path d="M 440 156 Q 425 168 405 162" stroke="#78350f" stroke-width="2" stroke-linecap="round" fill="none"/>
+      <path d="M 428 162 Q 436 176 442 165 Z" fill="#f43f5e"/>
+
+      <!-- Recovery Bandage / Soft Collar with Clinic Medallion -->
+      <path d="M 345 190 C 375 195 405 195 425 180 L 420 198 C 395 212 365 212 340 205 Z" fill="#059669"/>
+      <!-- VetSentinel Gold Emblem Medallion -->
+      <circle cx="380" cy="208" r="12" fill="#fbbf24" stroke="#d97706" stroke-width="1.5" filter="url(#glow)"/>
+      <path d="M 375 208 L 379 212 L 386 204" fill="none" stroke="#78350f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+
+    <!-- Gentle Recovery Paw Light Wrap (Signifying IV catheter safely removed) -->
+    <rect x="360" y="278" width="26" height="16" rx="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" opacity="0.95"/>
+    <path d="M 368 286 L 378 286" stroke="#10b981" stroke-width="2"/>
+    <path d="M 373 281 L 373 291" stroke="#10b981" stroke-width="2"/>
+  </g>
+
+  <!-- Large Floating Clinical Success Badge (Top Left Corner) -->
+  <g transform="translate(60, 40)" filter="url(#softShadow)">
+    <rect width="280" height="74" rx="20" fill="#0f292b" stroke="#10b981" stroke-width="2"/>
+    <!-- Glowing Shield -->
+    <g transform="translate(20, 15)">
+      <path d="M 22 2 C 34 2 44 8 44 18 C 44 32 28 42 22 46 C 16 42 0 32 0 18 C 0 8 10 2 22 2 Z"
+            fill="url(#shieldGrad)" filter="url(#glow)"/>
+      <path d="M 14 22 L 20 28 L 30 16" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <!-- Text -->
+    <text x="78" y="34" fill="#34d399" font-family="'Space Grotesk', sans-serif" font-size="14" font-weight="800" letter-spacing="0.5">DISCHARGE STATUS</text>
+    <text x="78" y="54" fill="#ffffff" font-family="'Space Grotesk', sans-serif" font-size="16" font-weight="700">100% Full Recovery</text>
+  </g>
+
+  <!-- Ambient Floating Medical Telemetry Particles -->
+  <circle cx="480" cy="120" r="3" fill="#34d399" opacity="0.6" filter="url(#glow)"/>
+  <circle cx="530" cy="80" r="2" fill="#6ee7b7" opacity="0.8"/>
+  <circle cx="920" cy="480" r="3" fill="#10b981" opacity="0.5" filter="url(#glow)"/>
+  <circle cx="860" cy="620" r="2" fill="#38bdf8" opacity="0.7"/>
+  <circle cx="120" cy="420" r="2.5" fill="#34d399" opacity="0.6"/>
+</svg>

@@ -1,0 +1,214 @@
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+@import "tailwindcss";
+
+@plugin "daisyui" {
+  themes:
+    emerald --default,
+    all;
+}
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  --font-display: "Space Grotesk", system-ui, -apple-system, sans-serif;
+  --font-label: "Space Grotesk", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --color-emerald-400: #34d399;
+  --color-emerald-500: #10b981;
+  --color-violet-400: #a78bfa;
+  --color-violet-500: #8b5cf6;
+  --color-blue-400: #60a5fa;
+  --color-blue-500: #3b82f6;
+  --color-amber-400: #fbbf24;
+  --color-red-400: #f87171;
+}
+
+@layer base {
+  html,
+  body {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  body {
+    @apply bg-base-100 text-base-content font-sans antialiased;
+  }
+}
+
+/* When navigating, apply the swipe-left class */
+.swipe-left {
+  animation: swipeLeft 1s ease forwards;
+  -webkit-animation: swipeLeft 1s ease forwards;
+}
+
+@keyframes swipeLeft {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+}
+
+@-webkit-keyframes swipeLeft {
+  from {
+    -webkit-transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    -webkit-transform: translateX(-100%);
+    opacity: 0;
+  }
+}
+
+/* Premium Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-base-content, rgba(156, 163, 175, 0.15));
+  border-radius: 9999px;
+  transition: background 0.2s;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-base-content, rgba(156, 163, 175, 0.35));
+}
+
+/* Glassmorphism panel helpers for premium look */
+.glass-panel {
+  background: color-mix(in srgb, var(--color-base-200) 40%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid
+    color-mix(in srgb, var(--color-base-content) 8%, transparent);
+}
+
+/* Custom glow animations */
+@keyframes status-glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 4px 0px rgba(16, 185, 129, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 12px 3px rgba(16, 185, 129, 0.7);
+  }
+}
+
+.glow-active {
+  animation: status-glow-pulse 2.5s infinite ease-in-out;
+}
+
+/* Premium dynamic dashboard background with subtle glows */
+.dashboard-bg {
+  background-color: var(--color-base-300);
+  background-image: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--color-primary) 15%, transparent) 0.5px,
+    transparent 1.5px
+  );
+  background-size: 15px 15px;
+  background-attachment: fixed;
+}
+
+.header-gradient {
+  background-image:
+    radial-gradient(
+      circle at 60% 10%,
+      color-mix(in srgb, var(--color-primary) 20%, transparent) 0%,
+      transparent 45%
+    ),
+    radial-gradient(
+      circle at 90% 90%,
+      color-mix(in srgb, var(--color-primary) 40%, transparent) 0%,
+      transparent 0%
+    );
+}
+
+/* Authentic Veterinary ECG Telemetry Millimeter Paper Grid */
+.vet-ecg-grid {
+  background-image:
+    linear-gradient(
+      to right,
+      color-mix(in srgb, var(--color-primary) 8%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--color-primary) 8%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to right,
+      color-mix(in srgb, var(--color-primary) 20%, transparent) 1.5px,
+      transparent 1.5px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--color-primary) 20%, transparent) 1.5px,
+      transparent 1.5px
+    );
+  background-size:
+    12px 12px,
+    12px 12px,
+    60px 60px,
+    60px 60px;
+}
+
+/* Veterinary Reticle Crosshair Grid */
+.vet-reticle-grid {
+  background-image:
+    radial-gradient(
+      circle at center,
+      color-mix(in srgb, var(--color-primary) 40%, transparent) 1.5px,
+      transparent 1.5px
+    ),
+    linear-gradient(
+      to right,
+      color-mix(in srgb, var(--color-primary) 6%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--color-primary) 6%, transparent) 1px,
+      transparent 1px
+    );
+  background-size:
+    48px 48px,
+    48px 48px,
+    48px 48px;
+}
+
+/* Combined ECG grid background — replaces 3 fixed composited layer divs with a single paint */
+.vet-ecg-bg {
+  background-image:
+    linear-gradient(
+      to right,
+      color-mix(in srgb, var(--color-primary) 8%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--color-primary) 8%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to right,
+      color-mix(in srgb, var(--color-primary) 20%, transparent) 1.5px,
+      transparent 1.5px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--color-primary) 20%, transparent) 1.5px,
+      transparent 1.5px
+    );
+  background-size:
+    12px 12px,
+    12px 12px,
+    60px 60px,
+    60px 60px;
+  background-blend-mode: overlay;
+}

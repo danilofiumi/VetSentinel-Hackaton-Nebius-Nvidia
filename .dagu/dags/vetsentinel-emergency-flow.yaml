@@ -1,0 +1,117 @@
+# VetSentinel Emergency & Toxicology Clinical Pipeline
+# Orchestrates Nebius Token Factory & Tavily Web Search Specialist via Python & Poetry
+
+description: "VetSentinel - Veterinary Clinical Triage & Toxicology Emergency Pipeline"
+type: graph
+
+artifacts:
+  enabled: true
+
+params:
+  SPECIES: "Cat"
+  BREED: "European Shorthair"
+  WEIGHT: "4.0"
+  SYMPTOMS: "4.0 kg European Shorthair cat, ingested an unidentified cut flower 2h ago, vomiting and lethargy."
+  PRIORITY: "auto"
+  LANGUAGE: "en"
+
+env:
+  - DAG_NAME: "vetsentinel-emergency-flow"
+  - RUN_ARTIFACTS_DIR: "${context.paths.artifacts_dir}"
+  - CENTRAL_ARTIFACTS_DIR: "$DAGU_HOME/data/artifacts/vetsentinel"
+  - TAVILY_API_KEY: "${TAVILY_API_KEY}"
+  - NEBIUS_API_KEY: "${NEBIUS_API_KEY}"
+  - NEBIUS_API_URL: "${NEBIUS_API_URL}"
+  - NEBIUS_MODEL: "${NEBIUS_MODEL}"
+  - NEBIUS_FALLBACK_MODEL: "${NEBIUS_FALLBACK_MODEL}"
+  - NEBIUS_ORCHESTRATOR_TEMPERATURE: "${NEBIUS_ORCHESTRATOR_TEMPERATURE}"
+  - NEBIUS_ORCHESTRATOR_MAX_TOKENS: "${NEBIUS_ORCHESTRATOR_MAX_TOKENS}"
+  - NEBIUS_ORCHESTRATOR_TIMEOUT: "${NEBIUS_ORCHESTRATOR_TIMEOUT}"
+  - NEBIUS_SYNTHESIS_MODEL: "${NEBIUS_SYNTHESIS_MODEL}"
+  - NEBIUS_SYNTHESIS_TEMPERATURE: "${NEBIUS_SYNTHESIS_TEMPERATURE}"
+  - NEBIUS_SYNTHESIS_MAX_TOKENS: "${NEBIUS_SYNTHESIS_MAX_TOKENS}"
+  - NEBIUS_SYNTHESIS_TIMEOUT: "${NEBIUS_SYNTHESIS_TIMEOUT}"
+  - NEBIUS_CHAT_MODEL: "${NEBIUS_CHAT_MODEL}"
+  - NEBIUS_CHAT_TEMPERATURE: "${NEBIUS_CHAT_TEMPERATURE}"
+  - NEBIUS_CHAT_MAX_TOKENS: "${NEBIUS_CHAT_MAX_TOKENS}"
+  - NEBIUS_CHAT_TIMEOUT: "${NEBIUS_CHAT_TIMEOUT}"
+  - NEBIUS_TIMEOUT: "${NEBIUS_TIMEOUT}"
+  - POCKETBASE_URL: "${POCKETBASE_URL}"
+
+steps:
+  - name: setup_environment
+    description: "Setup Triage & Artifacts"
+    working_dir: "${DAGU_HOME}/.."
+    run: |
+      echo "=========================================================================="
+      echo "      VETSENTINEL CLINICAL TRIAGE & TOXICOLOGY PIPELINE INITIALIZATION"
+      echo "=========================================================================="
+      echo "  Patient:        $SPECIES ($BREED) | Weight: $WEIGHT kg | Priority: AI Evaluated on Run"
+      echo "  Anamnesis:      $SYMPTOMS"
+      echo "  Run Artifacts:  ${context.paths.artifacts_dir}"
+      echo "  Central Sync:   $DAGU_HOME/data/artifacts/vetsentinel"
+      echo "=========================================================================="
+      mkdir -p "${context.paths.artifacts_dir}"
+      mkdir -p "$DAGU_HOME/data/artifacts/vetsentinel"
+
+  - name: nebius_orchestrator
+    description: "Nebius Token Factory Orchestrator"
+    depends: [setup_environment]
+    working_dir: "${DAGU_HOME}/../app/py"
+    run: |
+      poetry run python 01_orchestrator_nebius.py \
+        --species "$SPECIES" \
+        --breed "$BREED" \
+        --weight "$WEIGHT" \
+        --symptoms "$SYMPTOMS" \
+        --priority "$PRIORITY" \
+        --output-dir "${context.paths.artifacts_dir}"
+      # Early mirror so the UI can show the gap analysis live as soon as Step 2 finishes,
+      # without waiting for the full pipeline (export_summary) to complete.
+      mkdir -p "$DAGU_HOME/data/artifacts/vetsentinel"
+      cp -f "${context.paths.artifacts_dir}"/01_orchestrator_*.* "$DAGU_HOME/data/artifacts/vetsentinel"/ 2>/dev/null || true
+
+  - name: tavily_web_search
+    description: "Tavily Web Search Specialist"
+    depends: [nebius_orchestrator]
+    working_dir: "${DAGU_HOME}/../app/py"
+    run: |
+      poetry run python 02_web_search_tavily.py \
+        --output-dir "${context.paths.artifacts_dir}"
+      # Early mirror so the UI can show the retrieved sources live the moment this step finishes.
+      mkdir -p "$DAGU_HOME/data/artifacts/vetsentinel"
+      cp -f "${context.paths.artifacts_dir}"/02_*.* "$DAGU_HOME/data/artifacts/vetsentinel"/ 2>/dev/null || true
+
+  - name: clinical_synthesis
+    description: "Nebius Clinical Synthesis & Dosage Calculation"
+    depends: [tavily_web_search]
+    working_dir: "${DAGU_HOME}/../app/py"
+    run: |
+      poetry run python 03_clinical_synthesis_nebius.py \
+        --output-dir "${context.paths.artifacts_dir}"
+      # Early mirror so the UI can show the protocol & emergency sheet live the moment this step finishes.
+      mkdir -p "$DAGU_HOME/data/artifacts/vetsentinel"
+      cp -f "${context.paths.artifacts_dir}"/03_*.* "${context.paths.artifacts_dir}"/final_clinical_emergency_sheet.md "$DAGU_HOME/data/artifacts/vetsentinel"/ 2>/dev/null || true
+
+  - name: export_summary
+    description: "Finalization & Artifact Verification"
+    depends: [clinical_synthesis]
+    working_dir: "${DAGU_HOME}/.."
+    run: |
+      RUN_ART="${context.paths.artifacts_dir}"
+      CENTRAL="$DAGU_HOME/data/artifacts/vetsentinel"
+      mkdir -p "$RUN_ART" "$CENTRAL"
+      
+      # Mirror sync to central directory
+      cp -r "$RUN_ART"/* "$CENTRAL"/ 2>/dev/null || true
+      
+      echo ""
+      echo "=========================================================================="
+      echo "                 VETSENTINEL PIPELINE RUN COMPLETED"
+      echo "=========================================================================="
+      echo "  Dagu Run Artifacts Directory:   $RUN_ART"
+      echo "  Central Artifacts Directory:    $CENTRAL"
+      echo "--------------------------------------------------------------------------"
+      echo "  Files stored successfully for this DAG Run:"
+      ls -lh "$RUN_ART"
+      echo "=========================================================================="

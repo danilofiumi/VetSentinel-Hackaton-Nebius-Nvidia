@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Workspace-local dagu wrapper.
+# Sets DAGU_HOME so all commands are scoped to this workspace.
+# Changes nothing about the system-wide Dagu instance.
+#
+# Usage (from project root):
+#   ./dagu ls
+#   ./dagu start <dag-name>
+#   ./dagu server          ← opens Dagu Dashboard on port configured in .dagu/config.yaml (e.g. 8075)
+#
+# Sandboxed Dagu execution wrapper.
+# Sets up Dagu to use the local .dagu directory inside this workspace.
+
+# Get the absolute path of the directory containing this script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Configure environment variables to sandbox Dagu inside .dagu
+export DAGU_HOME="${SCRIPT_DIR}/.dagu"
+export DAGU_CONFIG="${SCRIPT_DIR}/.dagu/config.yaml"
+
+# Ensure Dagu directories exist
+mkdir -p "${DAGU_HOME}/dags"
+mkdir -p "${DAGU_HOME}/logs"
+mkdir -p "${DAGU_HOME}/data"
+mkdir -p "${DAGU_HOME}/artifacts"
+
+
+
+# Prefer the user's local dagu binary; fall back to whatever is on PATH.
+if [ -x "${HOME}/.local/bin/dagu" ]; then
+    exec "${HOME}/.local/bin/dagu" "$@"
+fi
+
+# Execute the local or system dagu binary with the provided arguments
+exec dagu "$@"
