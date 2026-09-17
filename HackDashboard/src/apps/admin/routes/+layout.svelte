@@ -117,7 +117,7 @@
 </script>
 
 <div
-  class="min-h-screen bg-base-300 text-base-content flex flex-col font-sans transition-colors duration-300 relative selection:bg-primary/30 vet-ecg-bg"
+  class="min-h-screen bg-base-300 text-base-content flex flex-col font-sans transition-colors duration-300 relative selection:bg-primary/30"
   data-sveltekit-preload-data="tap"
   data-sveltekit-preload-code="viewport"
 >
@@ -173,7 +173,9 @@
         class="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-full bg-base-200/80 border border-base-300 text-xs shadow-inner"
       >
         <span class="w-2 h-2 rounded-full bg-accent animate-pulse"></span>
-        <span class="font-bold text-base-content/70">{t("nav.evidenceLabel")}</span>
+        <span class="font-bold text-base-content/70"
+          >{t("nav.evidenceLabel")}</span
+        >
         <span class="text-accent font-mono font-bold text-[11px]">
           {t("nav.evidenceSources")}
         </span>

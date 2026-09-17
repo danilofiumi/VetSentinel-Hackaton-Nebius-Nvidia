@@ -39,25 +39,6 @@ load_env_file() {
         done < "$env_file"
     fi
 }
-# Load static baseline parameters from static/parameters.json
-load_static_parameters() {
-    local param_file="$SCRIPT_DIR/static/parameters.json"
-    [ ! -f "$param_file" ] && param_file="$SCRIPT_DIR/parameters/parameters.json"
-    if [ -f "$param_file" ] && command -v python3 >/dev/null 2>&1; then
-        eval "$(python3 -c '
-import json, sys
-try:
-    with open("'"$param_file"'") as f:
-        data = json.load(f)
-    for k, v in data.items():
-        if isinstance(v, (str, int, float)):
-            print(f"if [ -z \"${{{k}+x}}\" ]; then export {k}=\"{v}\"; fi")
-except Exception:
-    pass
-' 2>/dev/null || true)"
-    fi
-}
-load_static_parameters
 
 load_env_file "$SCRIPT_DIR/.env"
 load_env_file "$SCRIPT_DIR/HackDashboard/.env"

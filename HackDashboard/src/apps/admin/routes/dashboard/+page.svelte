@@ -99,18 +99,26 @@
       import("./WebSearchStep.svelte").then((m) => (WebSearchStep = m.default));
     }
     if (currentSection === "synthesis" && !ClinicalSynthesisStep) {
-      import("./ClinicalSynthesisStep.svelte").then((m) => (ClinicalSynthesisStep = m.default));
+      import("./ClinicalSynthesisStep.svelte").then(
+        (m) => (ClinicalSynthesisStep = m.default),
+      );
     }
     if (currentSection === "sheet" && !EmergencySheetViewer) {
-      import("./EmergencySheetViewer.svelte").then((m) => (EmergencySheetViewer = m.default));
+      import("./EmergencySheetViewer.svelte").then(
+        (m) => (EmergencySheetViewer = m.default),
+      );
     }
   });
 
   // Preload next-needed components + init DAG ping on mount
   onMount(async () => {
     // Start loading the copilot widget + step 2 immediately in the background (idle time)
-    import("./ClinicalChatWidget.svelte").then((m) => (ClinicalChatWidget = m.default));
-    import("./ClinicalAssessmentStep.svelte").then((m) => (ClinicalAssessmentStep = m.default));
+    import("./ClinicalChatWidget.svelte").then(
+      (m) => (ClinicalChatWidget = m.default),
+    );
+    import("./ClinicalAssessmentStep.svelte").then(
+      (m) => (ClinicalAssessmentStep = m.default),
+    );
 
     // Background DAG server connectivity check — fire-and-forget, never blocks rendering
     fetchLatestDagRun()
@@ -748,7 +756,8 @@
                         ? 'badge-warning'
                         : 'badge-success text-white'}"
                   >
-                    {t("common.aiTriagePrefix")} {patient.priorita}
+                    {t("common.aiTriagePrefix")}
+                    {patient.priorita}
                   </span>
                 {:else}
                   <span
@@ -815,7 +824,8 @@
           <!-- STEP 2: CLINICAL ASSESSMENT (Standalone Dedicated Component) -->
           <div in:fly={{ y: 15, duration: 200, easing: cubicInOut }}>
             {#if ClinicalAssessmentStep}
-              <svelte:component this={ClinicalAssessmentStep}
+              <svelte:component
+                this={ClinicalAssessmentStep}
                 {patient}
                 {artifactsData}
                 {runStatus}
@@ -830,14 +840,18 @@
                 onOpenDagu={triggerAnalysis}
               />
             {:else}
-              <div class="flex items-center justify-center py-24"><span class="loading loading-spinner loading-lg text-primary"></span></div>
+              <div class="flex items-center justify-center py-24">
+                <span class="loading loading-spinner loading-lg text-primary"
+                ></span>
+              </div>
             {/if}
           </div>
         {:else if currentSection === "sources"}
           <!-- STEP 3: SCIENTIFIC SOURCES (Tavily Literature) -->
           <div in:fly={{ y: 15, duration: 200, easing: cubicInOut }}>
             {#if WebSearchStep}
-              <svelte:component this={WebSearchStep}
+              <svelte:component
+                this={WebSearchStep}
                 {patient}
                 {artifactsData}
                 {runStatus}
@@ -848,14 +862,18 @@
                 onOpenDagu={triggerAnalysis}
               />
             {:else}
-              <div class="flex items-center justify-center py-24"><span class="loading loading-spinner loading-lg text-primary"></span></div>
+              <div class="flex items-center justify-center py-24">
+                <span class="loading loading-spinner loading-lg text-primary"
+                ></span>
+              </div>
             {/if}
           </div>
         {:else if currentSection === "synthesis"}
           <!-- STEP 4: PROTOCOL & DOSAGES (Synthesis) -->
           <div in:fly={{ y: 15, duration: 200, easing: cubicInOut }}>
             {#if ClinicalSynthesisStep}
-              <svelte:component this={ClinicalSynthesisStep}
+              <svelte:component
+                this={ClinicalSynthesisStep}
                 {patient}
                 {artifactsData}
                 {runStatus}
@@ -868,14 +886,18 @@
                 {isCopilotOpen}
               />
             {:else}
-              <div class="flex items-center justify-center py-24"><span class="loading loading-spinner loading-lg text-primary"></span></div>
+              <div class="flex items-center justify-center py-24">
+                <span class="loading loading-spinner loading-lg text-primary"
+                ></span>
+              </div>
             {/if}
           </div>
         {:else if currentSection === "sheet"}
           <!-- STEP 5: EMERGENCY SHEET (Official Final Sheet) -->
           <div in:fly={{ y: 15, duration: 200, easing: cubicInOut }}>
             {#if EmergencySheetViewer}
-              <svelte:component this={EmergencySheetViewer}
+              <svelte:component
+                this={EmergencySheetViewer}
                 sheetMd={artifactsData ? artifactsData.sheetMd : ""}
                 {patient}
                 {artifactsData}
@@ -887,7 +909,10 @@
                 onRerun={triggerAnalysis}
               />
             {:else}
-              <div class="flex items-center justify-center py-24"><span class="loading loading-spinner loading-lg text-primary"></span></div>
+              <div class="flex items-center justify-center py-24">
+                <span class="loading loading-spinner loading-lg text-primary"
+                ></span>
+              </div>
             {/if}
           </div>
         {/if}
@@ -906,7 +931,8 @@
 
 <!-- FIXED RIGHT-MARGIN CLINICAL AI COPILOT (BELL BOOKMARK DRAWER) -->
 {#if ClinicalChatWidget}
-  <svelte:component this={ClinicalChatWidget}
+  <svelte:component
+    this={ClinicalChatWidget}
     bind:this={chatWidgetRef}
     {patient}
     {artifactsData}

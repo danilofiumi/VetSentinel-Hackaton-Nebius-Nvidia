@@ -77,6 +77,36 @@
     );
   }
 
+  // Normalize/heal collapsed or inline Markdown (headings, divider rules, tables, bullets)
+  function formatClinicalMarkdown(text) {
+    if (!text || typeof text !== "string") return "";
+
+    let res = text;
+    // 1. Separate divider lines (---) if glued inline
+    res = res.replace(/(?<=[^\n])[ \t]+---(?=[ \t]|$)/g, "\n\n---\n\n");
+    res = res.replace(/^[ \t]*---[ \t]+(?=[^\n])/gm, "---\n\n");
+
+    // 2. Separate inline headings (###, ##, #)
+    res = res.replace(/(?<=[^\n])[ \t]+(#{1,6}[ \t]+)/g, "\n\n$1");
+
+    // 3. Ensure start of table starts on a new line after preceding text/heading
+    res = res.replace(/(^|\n)([^|\n]+?)[ \t]+(\|.+)/g, "$1$2\n\n$3");
+
+    // 4. Split inline table rows ("| |" on the same line)
+    res = res.replace(/\|[ \t]+\|[ \t]*/g, "|\n| ");
+
+    // 5. Separate inline bullet points (- or * or •)
+    res = res.replace(/(?<=[^\n])[ \t]+([*\-•][ \t]+(?=\*\*|[A-Za-z0-9]))/g, "\n- ");
+
+    // 6. Separate inline numbered list items (" 1. ", " 2. ")
+    res = res.replace(/(?<=[^\n])[ \t]+(\d+\.[ \t]+)/g, "\n$1");
+
+    // 7. Deduplicate excess newlines (3+ -> 2)
+    res = res.replace(/\n{3,}/g, "\n\n");
+
+    return res.trim();
+  }
+
   let initialGreeting = $derived(buildGreeting(patient));
 
   // Dynamically update the greeting message in the chat feed whenever intake selections change
@@ -711,9 +741,9 @@
 
           <div class="flex-1 min-w-0 flex flex-col gap-1">
             <div
-              class="p-3.5 overflow-scroll rounded-2xl rounded-tl-xs bg-base-200/70 border border-base-300/80 shadow-xs text-base-content/90 text-[12.5px] leading-relaxed copilot-markdown break-words"
+              class="p-3.5 overflow-x-auto rounded-2xl rounded-tl-xs bg-base-200/70 border border-base-300/80 shadow-xs text-base-content/90 text-[12.5px] leading-relaxed copilot-markdown break-words"
             >
-              <SvelteMarkdown source={msg.content} />
+              <SvelteMarkdown source={formatClinicalMarkdown(msg.content)} />
             </div>
 
             {#if msg.executionLog}
@@ -964,6 +994,11 @@
   }
   .copilot-markdown :global(strong) {
     font-weight: 700;
+  }
+  .copilot-markdown :global(hr) {
+    border: 0;
+    border-top: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+    margin: 0.65rem 0;
   }
   .copilot-markdown :global(table) {
     width: 100%;

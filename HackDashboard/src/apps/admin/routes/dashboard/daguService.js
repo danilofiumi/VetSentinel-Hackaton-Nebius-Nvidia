@@ -144,9 +144,10 @@ export function buildChatDaguParams({ patient, query, history, language = "en" }
   const trimmedHistory = (history || []).slice(-6).map((m) => ({
     role: m.role,
     content: (m.content || "")
-      .replace(/[\r\n]+/g, " ")
+      .replace(/\r\n/g, "\n")
+      .replace(/\r/g, "\n")
       .replace(/"/g, "'")
-      .slice(0, 400),
+      .slice(0, 500),
   }));
   const historyStr = sanitizeParam(JSON.stringify(trimmedHistory));
 

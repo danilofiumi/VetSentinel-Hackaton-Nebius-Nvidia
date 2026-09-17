@@ -35,12 +35,13 @@
           <span
             class="badge badge-xs font-mono font-bold uppercase gap-1 {urgencyBadgeClass}"
           >
-            {t("orchestrator.aiTriage")} {priority}
+            {t("orchestrator.aiTriage")}
+            {priority}
           </span>
         {/if}
       {:else if isRunning}
         <span
-          class="badge badge-xs badge-secondary text-white font-mono font-bold gap-1.5 animate-pulse"
+          class="badge relative -top-1 badge-xs badge-secondary text-white font-mono font-bold gap-1.5 animate-pulse"
         >
           {t("orchestrator.reasoningLive")}
         </span>

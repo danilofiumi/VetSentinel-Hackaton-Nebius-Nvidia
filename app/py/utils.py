@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import sys
 import time
@@ -26,8 +27,12 @@ console = Console(force_terminal=True, color_system="auto", width=110)
 def _load_static_parameters():
     candidates = [
         Path(__file__).resolve().parent.parent.parent / "static" / "parameters.json",
+        Path(__file__).resolve().parent.parent / "static" / "parameters.json",
+        Path(__file__).resolve().parent / "static" / "parameters.json",
         Path("/app/static/parameters.json"),
         Path("static/parameters.json"),
+        Path("../static/parameters.json"),
+        Path("../../static/parameters.json"),
         Path(__file__).resolve().parent.parent.parent / "parameters" / "parameters.json",
         Path("/app/parameters/parameters.json"),
         Path("parameters/parameters.json"),
@@ -41,7 +46,10 @@ def _load_static_parameters():
                         for k, v in data.items():
                             curr = os.environ.get(k)
                             if curr is None or str(curr).strip() in ("", "${" + k + "}"):
-                                os.environ[k] = str(v)
+                                if isinstance(v, (list, dict)):
+                                    os.environ[k] = json.dumps(v)
+                                else:
+                                    os.environ[k] = str(v)
                         return data
             except Exception:
                 pass
@@ -67,6 +75,82 @@ def get_parameter(key: str, default=None):
         if s and s not in ("${" + key + "}", "$" + key, "None", "null"):
             return s
     return default
+
+def get_parameter_list(key: str, default=None) -> list[str]:
+    """Retrieve a list parameter checking OS env first, then static parameters.json, then default."""
+    if default is None:
+        default = []
+
+    # 1. Check OS env
+    val = os.getenv(key)
+    if val is not None:
+        s = str(val).strip()
+        if s.startswith(('"', "'")) and s.endswith(('"', "'")) and len(s) >= 2:
+            s = s[1:-1].strip()
+        if s and s not in ("${" + key + "}", "$" + key, "None", "null"):
+            try:
+                parsed = json.loads(s)
+                if isinstance(parsed, list):
+                    return [str(x).strip() for x in parsed if str(x).strip()]
+            except Exception:
+                return [x.strip() for x in s.split(",") if x.strip()]
+
+    # 2. Check static parameters
+    static_val = STATIC_PARAMETERS.get(key)
+    if static_val is not None:
+        if isinstance(static_val, list):
+            return [str(x).strip() for x in static_val if str(x).strip()]
+        s = str(static_val).strip()
+        if s.startswith(('"', "'")) and s.endswith(('"', "'")) and len(s) >= 2:
+            s = s[1:-1].strip()
+        if s and s not in ("${" + key + "}", "$" + key, "None", "null"):
+            try:
+                parsed = json.loads(s)
+                if isinstance(parsed, list):
+                    return [str(x).strip() for x in parsed if str(x).strip()]
+            except Exception:
+                return [x.strip() for x in s.split(",") if x.strip()]
+
+    return default
+
+def resolve_candidate_models(primary_model: str, step_name: str = "orchestrator") -> list[str]:
+    """Resolves ordered candidate models: primary model first, followed by intermediate fallbacks,
+    ending with the long-tail fallback model (which executes without timeout)."""
+    models = []
+    if primary_model and primary_model.strip():
+        models.append(primary_model.strip())
+
+    fallbacks = get_parameter_list("NEBIUS_FALLBACK_MODELS", [])
+    single_fb = get_parameter("NEBIUS_FALLBACK_MODEL")
+    if single_fb:
+        for m in single_fb.split(","):
+            clean_m = m.strip()
+            if clean_m and clean_m not in fallbacks:
+                fallbacks.append(clean_m)
+
+    longtail_fb = get_parameter("NEBIUS_LONGTAIL_FALLBACK_MODEL")
+
+    for fb in fallbacks:
+        clean_fb = fb.strip()
+        if clean_fb and clean_fb not in models and clean_fb != longtail_fb:
+            models.append(clean_fb)
+
+    # Guarantee long-tail fallback is at the very end of the candidate list
+    if longtail_fb and longtail_fb.strip():
+        clean_longtail = longtail_fb.strip()
+        if clean_longtail not in models:
+            models.append(clean_longtail)
+        elif len(models) > 1 and models[-1] != clean_longtail:
+            models.remove(clean_longtail)
+            models.append(clean_longtail)
+
+    # Guarantee at least two models in chain so long-tail fallback is available
+    if len(models) == 1:
+        fallback_cand = "nvidia/Nemotron-3-Ultra-550b-a55b" if "Nemotron" not in models[0] else "zai-org/GLM-5.3"
+        models.append(fallback_cand)
+
+    return models
+
 
 
 # Load prompts from static/prompts.yaml
@@ -127,6 +211,35 @@ def resolve_language_name(code: str) -> str:
         return LANGUAGE_NAMES["en"]
     key = str(code).strip().lower()[:2]
     return LANGUAGE_NAMES.get(key, LANGUAGE_NAMES["en"])
+
+def format_clinical_markdown(text: str) -> str:
+    """Normalizes and heals collapsed or single-line Markdown output from LLMs."""
+    if not text or not isinstance(text, str):
+        return ""
+
+    res = text
+    # 1. Separate divider lines (---) if glued inline
+    res = re.sub(r'(?<=[^\n])[ \t]+---(?=[ \t]|$)', '\n\n---\n\n', res)
+    res = re.sub(r'^[ \t]*---[ \t]+(?=[^\n])', '---\n\n', res, flags=re.MULTILINE)
+
+    # 2. Separate inline headings (###, ##, #)
+    res = re.sub(r'(?<=[^\n])[ \t]+(#{1,6}[ \t]+)', r'\n\n\1', res)
+
+    # 3. Ensure start of table starts on a new line after preceding text/heading
+    res = re.sub(r'(^|\n)([^|\n]+?)[ \t]+(\|.+)', r'\1\2\n\n\3', res)
+
+    # 4. Split inline table rows ('| |' on the same line)
+    res = re.sub(r'\|[ \t]+\|[ \t]*', '|\n| ', res)
+
+    # 5. Separate inline bullet points (- or * or •)
+    res = re.sub(r'(?<=[^\n])[ \t]+([*\-•][ \t]+(?=\*\*|[A-Za-z0-9]))', r'\n- ', res)
+
+    # 6. Separate inline numbered list items (' 1. ', ' 2. ')
+    res = re.sub(r'(?<=[^\n])[ \t]+(\d+\.[ \t]+)', r'\n\1', res)
+
+    # 7. Deduplicate excess newlines (3+ -> 2)
+    res = re.sub(r'\n{3,}', '\n\n', res)
+    return res.strip()
 
 # Load environment variables from workspace root or current dir (secrets override static defaults)
 root_env = Path(__file__).resolve().parent.parent.parent / ".env"
@@ -356,37 +469,50 @@ def log_env_diagnostics(step_name: str = ""):
     nebius_model = get_parameter("NEBIUS_ORCHESTRATOR_MODEL", get_parameter("NEBIUS_MODEL", "zai-org/GLM-5.3"))
     orch_temp = get_parameter("NEBIUS_ORCHESTRATOR_TEMPERATURE", "0.1")
     orch_max_tokens = get_parameter("NEBIUS_ORCHESTRATOR_MAX_TOKENS", "12000")
-    orch_timeout = get_parameter("NEBIUS_ORCHESTRATOR_TIMEOUT", get_parameter("NEBIUS_TIMEOUT", "1800"))
-    orch_fallback = get_parameter("NEBIUS_FALLBACK_MODEL", "zai-org/GLM-5.3-Flash")
+    orch_timeout = get_parameter("NEBIUS_ORCHESTRATOR_TIMEOUT", get_parameter("NEBIUS_TIMEOUT", "15"))
+    orch_candidates = resolve_candidate_models(nebius_model, "orchestrator")
+    orch_fallbacks_str = ", ".join(orch_candidates[1:]) if len(orch_candidates) > 1 else "None"
 
-    synthesis_model = get_parameter("NEBIUS_SYNTHESIS_MODEL", "zai-org/GLM-5.3")
+    synthesis_model = get_parameter("NEBIUS_SYNTHESIS_MODEL", get_parameter("NEBIUS_MODEL", "zai-org/GLM-5.3"))
     synth_temp = get_parameter("NEBIUS_SYNTHESIS_TEMPERATURE", "0.1")
     synth_max_tokens = get_parameter("NEBIUS_SYNTHESIS_MAX_TOKENS", "80000")
-    synth_timeout = get_parameter("NEBIUS_SYNTHESIS_TIMEOUT", get_parameter("NEBIUS_TIMEOUT", "1800"))
+    synth_timeout = get_parameter("NEBIUS_SYNTHESIS_TIMEOUT", get_parameter("NEBIUS_TIMEOUT", "60"))
+    synth_candidates = resolve_candidate_models(synthesis_model, "synthesis")
+    synth_fallbacks_str = ", ".join(synth_candidates[1:]) if len(synth_candidates) > 1 else "None"
 
-    chat_model = get_parameter("NEBIUS_CHAT_MODEL", "zai-org/GLM-5.3")
+    chat_model = get_parameter("NEBIUS_CHAT_MODEL", "nvidia/Nemotron-3-Ultra-550b-a55b")
     chat_temp = get_parameter("NEBIUS_CHAT_TEMPERATURE", "0.2")
-    chat_max_tokens = get_parameter("NEBIUS_CHAT_MAX_TOKENS", "3000")
+    chat_max_tokens = get_parameter("NEBIUS_CHAT_MAX_TOKENS", "6000")
     chat_timeout = get_parameter("NEBIUS_CHAT_TIMEOUT", "45")
+    chat_candidates = resolve_candidate_models(chat_model, "chat")
+    chat_fallbacks_str = ", ".join(chat_candidates[1:]) if len(chat_candidates) > 1 else "None"
 
     dagu_home = os.getenv("DAGU_HOME", "<default>")
     artifacts_dir = str(get_default_artifacts_dir())
 
     table.add_row("NEBIUS_API_URL", "[cyan]ENDPOINT[/cyan]", str(api_url))
+    orch_inter = ", ".join(orch_candidates[1:-1]) if len(orch_candidates) > 2 else "None"
+    orch_tail = orch_candidates[-1] if len(orch_candidates) > 1 else "None"
     table.add_row(
         "ORCHESTRATOR LLM (Step 1)",
         "[green]CONFIGURED[/green]",
-        f"{nebius_model} (temp={orch_temp}, max_tok={orch_max_tokens}, timeout={orch_timeout}s, fallback={orch_fallback})"
+        f"{nebius_model} ({orch_timeout}s) ➔ Fast Fallbacks: [{orch_inter}] ({orch_timeout}s) ➔ Long-Tail: [bold green]{orch_tail}[/bold green] ([bold yellow]NO TIMEOUT[/bold yellow])"
     )
+
+    synth_inter = ", ".join(synth_candidates[1:-1]) if len(synth_candidates) > 2 else "None"
+    synth_tail = synth_candidates[-1] if len(synth_candidates) > 1 else "None"
     table.add_row(
         "SYNTHESIS LLM (Step 3)",
         "[green]CONFIGURED[/green]",
-        f"{synthesis_model} (temp={synth_temp}, max_tok={synth_max_tokens}, timeout={synth_timeout}s)"
+        f"{synthesis_model} ({synth_timeout}s) ➔ Fast Fallbacks: [{synth_inter}] ({synth_timeout}s) ➔ Long-Tail: [bold green]{synth_tail}[/bold green] ([bold yellow]NO TIMEOUT[/bold yellow])"
     )
+
+    chat_inter = ", ".join(chat_candidates[1:-1]) if len(chat_candidates) > 2 else "None"
+    chat_tail = chat_candidates[-1] if len(chat_candidates) > 1 else "None"
     table.add_row(
         "COPILOT CHAT LLM (PB)",
         "[green]CONFIGURED[/green]",
-        f"{chat_model} (temp={chat_temp}, max_tok={chat_max_tokens}, timeout={chat_timeout}s)"
+        f"{chat_model} ({chat_timeout}s) ➔ Fast Fallbacks: [{chat_inter}] (25s) ➔ Long-Tail: [bold green]{chat_tail}[/bold green] ([bold yellow]NO TIMEOUT[/bold yellow])"
     )
     table.add_row("DAGU_HOME", "[cyan]PATH[/cyan]", str(dagu_home))
     table.add_row("ARTIFACTS DIRECTORY", "[cyan]PATH[/cyan]", artifacts_dir)

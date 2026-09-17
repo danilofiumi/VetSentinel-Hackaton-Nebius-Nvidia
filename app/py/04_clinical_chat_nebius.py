@@ -17,6 +17,7 @@ from utils import (
     get_central_artifacts_dir,
     resolve_output_dir,
     get_parameter,
+    resolve_candidate_models,
     get_prompt,
     render_prompt,
     resolve_language_name,
@@ -26,6 +27,7 @@ from utils import (
     log_http_request,
     log_http_response,
     mask_secret,
+    format_clinical_markdown,
 )
 from rich.panel import Panel
 from rich import box
@@ -196,7 +198,8 @@ def generate_copilot_reply(query: str, species: str, breed: str, weight: float, 
             "3. SPEED & STRUCTURE: Use structured Markdown with bold titles, bullet points, and callout warnings.\n"
             "4. EMERGENCY FOCUS: Emphasize vital stabilization, decontamination time-windows, fluid rates, and antidote availability.\n"
             "5. TONE: Professional, decisive, empathetic to high-stress emergency clinical workflow.\n"
-            "6. LANGUAGE: Write your entire response in {language_name}, matching the veterinarian's language."
+            "6. LANGUAGE: Write your entire response in {language_name}, matching the veterinarian's language.\n"
+            "7. FORMATTING DISCIPLINE: Always use standard Markdown with explicit blank lines (double newlines) before and after headings, divider rules (---), and list items. In tables, ensure every row is placed on its own separate line. NEVER concatenate headers, dividers, tables, or list items onto a single line."
         ),
         context=context_text,
         species=species,
@@ -281,29 +284,41 @@ def generate_copilot_reply(query: str, species: str, breed: str, weight: float, 
                     raise RuntimeError(f"Nebius status {resp.status_code}: {resp.text[:150]}")
         except (httpx.TimeoutException, Exception) as primary_err:
             duration_ms = (time.time() - start_time) * 1000
-            log_warning(f"Primary Nebius copilot model {chat_model} issue ({primary_err}). Engaging z-ai fallback (zai-org/GLM-5.3-Flash)...")
-            fallback_model = get_parameter("NEBIUS_FALLBACK_MODEL", "zai-org/GLM-5.3-Flash")
-            try:
-                fb_payload = {
-                    "model": fallback_model,
-                    "messages": messages_payload,
-                    "temperature": temperature,
-                    "max_tokens": 4096
-                }
-                with httpx.Client(timeout=25.0) as fb_client:
-                    fb_resp = fb_client.post(api_url, headers=headers, json=fb_payload)
-                    duration_ms = (time.time() - start_time) * 1000
-                    if fb_resp.status_code == 200:
-                        fb_json = fb_resp.json()
-                        reply_text = fb_json.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
-                        usage_info = fb_json.get("usage", {})
-                        chat_model = fallback_model
-                        log_success(f"Fast fallback ({fallback_model}) generated response in {duration_ms:.0f}ms")
-                    else:
-                        raise RuntimeError(f"Fallback status {fb_resp.status_code}")
-            except Exception as fb_err:
+            log_warning(f"Primary Nebius copilot model {chat_model} issue ({primary_err}). Engaging candidate fallback models...")
+            fallbacks = resolve_candidate_models(chat_model, "chat")[1:]
+            fallback_success = False
+
+            for fb_idx, fallback_model in enumerate(fallbacks):
+                is_last_fb = (fb_idx == len(fallbacks) - 1)
+                fb_timeout = None if is_last_fb else 25.0
+                timeout_note = "NO TIMEOUT — Waiting until completion" if is_last_fb else "timeout=25s"
+                log_info(f"Attempting copilot fallback {fb_idx + 1}/{len(fallbacks)} on '{fallback_model}' ({timeout_note})...")
+                try:
+                    fb_payload = {
+                        "model": fallback_model,
+                        "messages": messages_payload,
+                        "temperature": temperature,
+                        "max_tokens": 4096
+                    }
+                    with httpx.Client(timeout=fb_timeout) as fb_client:
+                        fb_resp = fb_client.post(api_url, headers=headers, json=fb_payload)
+                        duration_ms = (time.time() - start_time) * 1000
+                        if fb_resp.status_code == 200:
+                            fb_json = fb_resp.json()
+                            reply_text = fb_json.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+                            usage_info = fb_json.get("usage", {})
+                            chat_model = fallback_model
+                            log_success(f"Fallback ({fallback_model}) generated response in {duration_ms:.0f}ms")
+                            fallback_success = True
+                            break
+                        else:
+                            raise RuntimeError(f"Fallback status {fb_resp.status_code}")
+                except Exception as fb_err:
+                    log_warning(f"Fallback model '{fallback_model}' unavailable ({fb_err}). Trying next fallback...")
+
+            if not fallback_success:
                 duration_ms = (time.time() - start_time) * 1000
-                log_exception(fb_err, "Fallback copilot model also unavailable. Applying offline verified assessment.")
+                log_warning("All candidate copilot models unavailable. Applying offline verified assessment.")
                 reply_text = (
                     f"### 🩺 VetSentinel Clinical Case Assessment (Offline Engine)\n\n"
                     f"**Patient:** {species} ({breed}), **{weight} kg** | **Triage:** {priority.upper()}\n\n"
@@ -315,6 +330,8 @@ def generate_copilot_reply(query: str, species: str, breed: str, weight: float, 
                     f"- **Monitoring Protocol:** Serial BUN, Creatinine, Electrolytes at T=0h, 12h, 24h, 48h.\n\n"
                     f"> ⚠️ *Operated via local verified veterinary toxicology database. Full pipeline synthesis evidence applied.*"
                 )
+
+    reply_text = format_clinical_markdown(reply_text)
 
     return {
         "query": query,
@@ -350,9 +367,12 @@ def main():
     history = []
     try:
         if args.history:
-            history = json.loads(args.history)
+            history = json.loads(args.history, strict=False)
     except Exception:
-        history = []
+        try:
+            history = json.loads(args.history.replace("\n", "\\n"), strict=False)
+        except Exception:
+            history = []
 
     console.print(Panel(
         f"[bold cyan]CLINICIAN QUERY:[/bold cyan] [bold white]{args.query}[/bold white]\n"

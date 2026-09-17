@@ -18,6 +18,7 @@ from utils import (
     save_artifact,
     resolve_output_dir,
     get_parameter,
+    resolve_candidate_models,
     get_prompt,
     render_prompt,
     resolve_language_name,
@@ -267,17 +268,14 @@ def analyze_clinical_case(species: str, breed: str, weight: float, symptoms: str
             "Skipping live inference and falling back to deterministic clinical rules."
         )
     else:
-        raw_timeout = get_parameter("NEBIUS_ORCHESTRATOR_TIMEOUT", get_parameter("NEBIUS_TIMEOUT", "1800.0"))
+        raw_timeout = get_parameter("NEBIUS_ORCHESTRATOR_TIMEOUT", get_parameter("NEBIUS_TIMEOUT", "15.0"))
         try:
             timeout_sec = float(raw_timeout)
         except Exception as te:
-            log_warning(f"Could not convert NEBIUS_TIMEOUT='{raw_timeout}' to float ({te}); defaulting to 1800.0s")
-            timeout_sec = 1800.0
+            log_warning(f"Could not convert NEBIUS_TIMEOUT='{raw_timeout}' to float ({te}); defaulting to 15.0s")
+            timeout_sec = 15.0
 
-        fallback_model = get_parameter("NEBIUS_FALLBACK_MODEL", "zai-org/GLM-5.3-Flash")
-        candidate_models = [effective_model]
-        if fallback_model and fallback_model != effective_model:
-            candidate_models.append(fallback_model)
+        candidate_models = resolve_candidate_models(effective_model, "orchestrator")
 
         url = get_parameter("NEBIUS_API_URL", "https://api.studio.nebius.ai/v1/chat/completions")
         temperature = float(get_parameter("NEBIUS_ORCHESTRATOR_TEMPERATURE", "0.1"))
@@ -300,11 +298,25 @@ def analyze_clinical_case(species: str, breed: str, weight: float, symptoms: str
                 "temperature": temperature,
                 "max_tokens": max_tokens
             }
-            console.print(f"[cyan]Initiating Nebius Inference attempt {cand_idx + 1}/{len(candidate_models)} on candidate model: [bold]{cand}[/bold][/cyan]")
-            log_http_request(provider="Nebius Token Factory", url=url, method="POST", headers=headers, payload=payload, timeout=timeout_sec)
+
+            is_longtail = (cand_idx == len(candidate_models) - 1) and len(candidate_models) > 1
+            cand_timeout = None if is_longtail else timeout_sec
+
+            if is_longtail:
+                console.print(
+                    f"[cyan]Initiating Nebius Inference attempt {cand_idx + 1}/{len(candidate_models)} "
+                    f"on long-tail fallback model: [bold green]{cand}[/bold green] "
+                    f"([bold yellow]NO TIMEOUT — Waiting until completion[/bold yellow])[/cyan]"
+                )
+            else:
+                console.print(
+                    f"[cyan]Initiating Nebius Inference attempt {cand_idx + 1}/{len(candidate_models)} "
+                    f"on candidate model: [bold]{cand}[/bold] (timeout={timeout_sec:.0f}s)[/cyan]"
+                )
+            log_http_request(provider="Nebius Token Factory", url=url, method="POST", headers=headers, payload=payload, timeout=cand_timeout)
 
             try:
-                with httpx.Client(timeout=timeout_sec) as client:
+                with httpx.Client(timeout=cand_timeout) as client:
                     resp = client.post(url, headers=headers, json=payload)
                     req_duration = (time.time() - req_start) * 1000
 
@@ -370,9 +382,18 @@ def analyze_clinical_case(species: str, breed: str, weight: float, symptoms: str
                         )
             except httpx.TimeoutException as toe:
                 req_duration = (time.time() - req_start) * 1000
-                log_exception(toe, f"Nebius HTTP timeout after {req_duration:.0f}ms on model '{cand}' (timeout={timeout_sec}s)")
+                if is_longtail:
+                    log_warning(f"Nebius HTTP timeout on long-tail model '{cand}' after {req_duration:.0f}ms.")
+                else:
+                    log_warning(
+                        f"Nebius HTTP timeout after {req_duration:.0f}ms on candidate model '{cand}' "
+                        f"(configured timeout: {timeout_sec:.0f}s). Attempting next fallback model..."
+                    )
             except httpx.HTTPError as he:
-                log_exception(he, f"Nebius HTTP transport error on model '{cand}'")
+                if is_longtail:
+                    log_warning(f"Nebius HTTP transport error on long-tail model '{cand}': {he}")
+                else:
+                    log_warning(f"Nebius HTTP transport error on model '{cand}': {he}. Attempting next fallback model...")
             except Exception as e:
                 log_exception(e, f"Nebius orchestrator unexpected exception on model '{cand}'")
 

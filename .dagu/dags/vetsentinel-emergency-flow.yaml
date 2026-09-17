@@ -21,38 +21,21 @@ env:
   - CENTRAL_ARTIFACTS_DIR: "$DAGU_HOME/data/artifacts/vetsentinel"
   - TAVILY_API_KEY: "${TAVILY_API_KEY}"
   - NEBIUS_API_KEY: "${NEBIUS_API_KEY}"
-  - NEBIUS_API_URL: "${NEBIUS_API_URL}"
-  - NEBIUS_MODEL: "${NEBIUS_MODEL}"
-  - NEBIUS_FALLBACK_MODEL: "${NEBIUS_FALLBACK_MODEL}"
-  - NEBIUS_ORCHESTRATOR_TEMPERATURE: "${NEBIUS_ORCHESTRATOR_TEMPERATURE}"
-  - NEBIUS_ORCHESTRATOR_MAX_TOKENS: "${NEBIUS_ORCHESTRATOR_MAX_TOKENS}"
-  - NEBIUS_ORCHESTRATOR_TIMEOUT: "${NEBIUS_ORCHESTRATOR_TIMEOUT}"
-  - NEBIUS_SYNTHESIS_MODEL: "${NEBIUS_SYNTHESIS_MODEL}"
-  - NEBIUS_SYNTHESIS_TEMPERATURE: "${NEBIUS_SYNTHESIS_TEMPERATURE}"
-  - NEBIUS_SYNTHESIS_MAX_TOKENS: "${NEBIUS_SYNTHESIS_MAX_TOKENS}"
-  - NEBIUS_SYNTHESIS_TIMEOUT: "${NEBIUS_SYNTHESIS_TIMEOUT}"
-  - NEBIUS_CHAT_MODEL: "${NEBIUS_CHAT_MODEL}"
-  - NEBIUS_CHAT_TEMPERATURE: "${NEBIUS_CHAT_TEMPERATURE}"
-  - NEBIUS_CHAT_MAX_TOKENS: "${NEBIUS_CHAT_MAX_TOKENS}"
-  - NEBIUS_CHAT_TIMEOUT: "${NEBIUS_CHAT_TIMEOUT}"
-  - NEBIUS_TIMEOUT: "${NEBIUS_TIMEOUT}"
   - POCKETBASE_URL: "${POCKETBASE_URL}"
 
 steps:
   - name: setup_environment
-    description: "Setup Triage & Artifacts"
-    working_dir: "${DAGU_HOME}/.."
+    description: "Setup Triage, Parameters & Artifacts via Python"
+    working_dir: "${DAGU_HOME}/../app/py"
     run: |
-      echo "=========================================================================="
-      echo "      VETSENTINEL CLINICAL TRIAGE & TOXICOLOGY PIPELINE INITIALIZATION"
-      echo "=========================================================================="
-      echo "  Patient:        $SPECIES ($BREED) | Weight: $WEIGHT kg | Priority: AI Evaluated on Run"
-      echo "  Anamnesis:      $SYMPTOMS"
-      echo "  Run Artifacts:  ${context.paths.artifacts_dir}"
-      echo "  Central Sync:   $DAGU_HOME/data/artifacts/vetsentinel"
-      echo "=========================================================================="
-      mkdir -p "${context.paths.artifacts_dir}"
-      mkdir -p "$DAGU_HOME/data/artifacts/vetsentinel"
+      poetry run python 00_setup_flow.py \
+        --species "$SPECIES" \
+        --breed "$BREED" \
+        --weight "$WEIGHT" \
+        --symptoms "$SYMPTOMS" \
+        --priority "$PRIORITY" \
+        --language "$LANGUAGE" \
+        --output-dir "${context.paths.artifacts_dir}"
 
   - name: nebius_orchestrator
     description: "Nebius Token Factory Orchestrator"

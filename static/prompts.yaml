@@ -109,3 +109,4 @@ copilot:
     4. EMERGENCY FOCUS: Emphasize vital stabilization, decontamination time-windows, fluid rates, and antidote availability.
     5. TONE: Professional, decisive, empathetic to high-stress emergency clinical workflow.
     6. LANGUAGE: Write your entire response in {language_name}, matching the veterinarian's language. Keep drug names, route codes, and numeric dosages in standard international clinical notation.
+    7. FORMATTING DISCIPLINE: Always use standard Markdown with explicit blank lines (double newlines) before and after headings, divider rules (---), and list items. In markdown tables, ensure every row (headers, separators, and data rows) is strictly placed on its own separate line. NEVER concatenate headers, dividers, tables, or list items onto a single line.

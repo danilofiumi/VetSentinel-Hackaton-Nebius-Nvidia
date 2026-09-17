@@ -20,6 +20,7 @@ from utils import (
     get_central_artifacts_dir,
     resolve_output_dir,
     get_parameter,
+    resolve_candidate_models,
     get_prompt,
     render_prompt,
     resolve_language_name,
@@ -331,99 +332,122 @@ def synthesize_with_llm(patient, documents, model_name, language: str = "en"):
     )
 
     synthesis_model = get_parameter("NEBIUS_SYNTHESIS_MODEL", get_parameter("NEBIUS_MODEL", "zai-org/GLM-5.3"))
-    raw_timeout = get_parameter("NEBIUS_SYNTHESIS_TIMEOUT", get_parameter("NEBIUS_TIMEOUT", "1800.0"))
+    raw_timeout = get_parameter("NEBIUS_SYNTHESIS_TIMEOUT", get_parameter("NEBIUS_TIMEOUT", "60.0"))
     try:
         timeout_sec = float(raw_timeout)
     except Exception as te:
-        log_warning(f"Could not convert timeout '{raw_timeout}' to float ({te}), using 1800.0s")
-        timeout_sec = 1800.0
+        log_warning(f"Could not convert timeout '{raw_timeout}' to float ({te}), using 60.0s")
+        timeout_sec = 60.0
 
+    candidate_models = resolve_candidate_models(synthesis_model, "synthesis")
     url = get_parameter("NEBIUS_API_URL", "https://api.studio.nebius.ai/v1/chat/completions")
     temperature = float(get_parameter("NEBIUS_SYNTHESIS_TEMPERATURE", "0.1"))
     max_tokens = int(get_parameter("NEBIUS_SYNTHESIS_MAX_TOKENS", "80000"))
     resp_format = get_parameter("NEBIUS_SYNTHESIS_RESPONSE_FORMAT", "json_object")
 
-    req_start = time.time()
-    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-    payload = {
-        "model": synthesis_model,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": prompt},
-        ],
-        "response_format": {"type": resp_format},
-        "temperature": temperature,
-        "max_tokens": max_tokens,
-    }
+    for cand_idx, cand in enumerate(candidate_models):
+        req_start = time.time()
+        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+        payload = {
+            "model": cand,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": prompt},
+            ],
+            "response_format": {"type": resp_format},
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
 
-    console.print(f"[cyan]Initiating Nebius Clinical Synthesis with model [bold]{synthesis_model}[/bold] (timeout={int(timeout_sec)}s)...[/cyan]")
-    log_http_request(provider="Nebius Synthesis", url=url, method="POST", headers=headers, payload=payload, timeout=timeout_sec)
+        is_longtail = (cand_idx == len(candidate_models) - 1) and len(candidate_models) > 1
+        cand_timeout = None if is_longtail else timeout_sec
 
-    try:
-        with httpx.Client(timeout=timeout_sec) as client:
-            resp = client.post(url, headers=headers, json=payload)
+        if is_longtail:
+            console.print(
+                f"[cyan]Initiating Nebius Clinical Synthesis attempt {cand_idx + 1}/{len(candidate_models)} "
+                f"on long-tail fallback model: [bold green]{cand}[/bold green] "
+                f"([bold yellow]NO TIMEOUT — Waiting until completion[/bold yellow])...[/cyan]"
+            )
+        else:
+            console.print(
+                f"[cyan]Initiating Nebius Clinical Synthesis attempt {cand_idx + 1}/{len(candidate_models)} "
+                f"on [bold]{cand}[/bold] (timeout={int(timeout_sec)}s)...[/cyan]"
+            )
+        log_http_request(provider="Nebius Synthesis", url=url, method="POST", headers=headers, payload=payload, timeout=cand_timeout)
+
+        try:
+            with httpx.Client(timeout=cand_timeout) as client:
+                resp = client.post(url, headers=headers, json=payload)
+                req_duration = (time.time() - req_start) * 1000
+
+                if resp.status_code == 200:
+                    resp_json = resp.json()
+                    choice = resp_json.get("choices", [{}])[0]
+                    finish_reason = choice.get("finish_reason", "unknown")
+                    content = choice.get("message", {}).get("content", "")
+                    usage = resp_json.get("usage")
+
+                    log_http_response(
+                        provider=f"Nebius Synthesis ({cand})",
+                        status_code=200,
+                        elapsed_ms=req_duration,
+                        headers=resp.headers,
+                        body=resp_json,
+                        finish_reason=finish_reason,
+                        usage=usage
+                    )
+
+                    if finish_reason == "length":
+                        log_warning(f"Nebius synthesis hit max_tokens limit on candidate {cand}. Attempting next model...")
+                        continue
+                    if not content or not content.strip():
+                        log_warning(f"Nebius synthesis returned empty content on candidate {cand}. Attempting next model...")
+                        continue
+
+                    cleaned_content = content.strip()
+                    if cleaned_content.startswith("```json"):
+                        cleaned_content = cleaned_content[7:]
+                    elif cleaned_content.startswith("```"):
+                        cleaned_content = cleaned_content[3:]
+                    if cleaned_content.endswith("```"):
+                        cleaned_content = cleaned_content[:-3]
+                    cleaned_content = cleaned_content.strip()
+
+                    try:
+                        data = json.loads(cleaned_content)
+                    except json.JSONDecodeError as jde:
+                        log_warning(f"Decoding JSON synthesis error on candidate '{cand}': {jde}. Attempting next model...")
+                        console.print(f"[dim yellow]Raw unparseable content preview (first 500 chars):[/dim yellow]\n{cleaned_content[:500]}")
+                        continue
+
+                    if _valid_synthesis(data):
+                        data["model_used"] = cand
+                        log_success(f"Evidence-grounded synthesis produced by Nebius ({cand}) in {req_duration:.0f}ms")
+                        return data
+                    log_warning(f"LLM synthesis on candidate {cand} failed validation checks. Attempting next candidate...")
+                else:
+                    log_http_response(
+                        provider=f"Nebius Synthesis ({cand})",
+                        status_code=resp.status_code,
+                        elapsed_ms=req_duration,
+                        headers=resp.headers,
+                        body=resp.text
+                    )
+        except httpx.TimeoutException as toe:
             req_duration = (time.time() - req_start) * 1000
-
-            if resp.status_code == 200:
-                resp_json = resp.json()
-                choice = resp_json.get("choices", [{}])[0]
-                finish_reason = choice.get("finish_reason", "unknown")
-                content = choice.get("message", {}).get("content", "")
-                usage = resp_json.get("usage")
-
-                log_http_response(
-                    provider=f"Nebius Synthesis ({synthesis_model})",
-                    status_code=200,
-                    elapsed_ms=req_duration,
-                    headers=resp.headers,
-                    body=resp_json,
-                    finish_reason=finish_reason,
-                    usage=usage
-                )
-
-                if finish_reason == "length":
-                    log_warning(f"Nebius synthesis hit max_tokens limit (finish_reason=length, model: {synthesis_model}). Reasoning model used all tokens before producing full JSON output.")
-                    return None
-                if not content or not content.strip():
-                    log_warning(f"Nebius synthesis returned empty content (finish_reason={finish_reason}, model: {synthesis_model}). Raw response: {resp.text[:400]}")
-                    return None
-
-                cleaned_content = content.strip()
-                if cleaned_content.startswith("```json"):
-                    cleaned_content = cleaned_content[7:]
-                elif cleaned_content.startswith("```"):
-                    cleaned_content = cleaned_content[3:]
-                if cleaned_content.endswith("```"):
-                    cleaned_content = cleaned_content[:-3]
-                cleaned_content = cleaned_content.strip()
-
-                try:
-                    data = json.loads(cleaned_content)
-                except json.JSONDecodeError as jde:
-                    log_exception(jde, f"Decoding JSON synthesis from Nebius ({synthesis_model})")
-                    console.print(f"[dim yellow]Raw unparseable content preview (first 500 chars):[/dim yellow]\n{cleaned_content[:500]}")
-                    return None
-
-                if _valid_synthesis(data):
-                    log_success(f"Evidence-grounded synthesis produced by Nebius ({synthesis_model}) in {req_duration:.0f}ms")
-                    return data
-                log_warning("LLM synthesis failed validation checks; falling back to deterministic clinical rules.")
+            if is_longtail:
+                log_warning(f"Nebius synthesis timed out on long-tail model '{cand}' after {req_duration:.0f}ms.")
             else:
-                log_http_response(
-                    provider=f"Nebius Synthesis ({synthesis_model})",
-                    status_code=resp.status_code,
-                    elapsed_ms=req_duration,
-                    headers=resp.headers,
-                    body=resp.text
-                )
-    except httpx.TimeoutException as toe:
-        req_duration = (time.time() - req_start) * 1000
-        log_exception(toe, f"Nebius synthesis timed out after {req_duration:.0f}ms on {synthesis_model} (configured timeout: {int(timeout_sec)}s)")
-    except httpx.HTTPError as he:
-        log_exception(he, f"Nebius synthesis HTTP transport error on {synthesis_model}")
-    except Exception as e:
-        log_exception(e, f"Nebius synthesis unexpected exception on {synthesis_model}")
+                log_warning(f"Nebius synthesis timed out after {req_duration:.0f}ms on {cand} (configured timeout: {int(timeout_sec)}s). Attempting next model...")
+        except httpx.HTTPError as he:
+            if is_longtail:
+                log_warning(f"Nebius synthesis HTTP transport error on long-tail model '{cand}': {he}")
+            else:
+                log_warning(f"Nebius synthesis HTTP transport error on {cand}: {he}. Attempting next model...")
+        except Exception as e:
+            log_exception(e, f"Nebius synthesis unexpected exception on {cand}")
 
+    log_warning("All LLM candidate synthesis models failed or timed out; falling back to deterministic clinical rules.")
     return None
 
 @trace_call("main", log_args=False)
